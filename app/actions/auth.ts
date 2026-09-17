@@ -1,6 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -55,6 +56,9 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   }
   const store = await cookies();
   store.set(SESSION_COOKIE, token, sessionCookieOptions);
+  // Drop every cached page from the previous session: the browser keeps rendered
+  // pages per URL, so without this a signed-in user can still see the last account's screens.
+  revalidatePath("/", "layout");
 
   if (user.role === "reporter" && !user.profile_completed) redirect("/profile/setup");
   redirect(ROLE_HOME[user.role]);
@@ -63,5 +67,6 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 export async function logout(reason?: "idle") {
   const store = await cookies();
   store.delete(SESSION_COOKIE);
+  revalidatePath("/", "layout");
   redirect(reason === "idle" ? "/login?expired=1" : "/login");
 }
