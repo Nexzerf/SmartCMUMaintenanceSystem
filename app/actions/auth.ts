@@ -28,7 +28,14 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   const [user] = await sql<{ id: string; username: string; role: Role; password_hash: string; profile_completed: boolean }[]>`
     select id, username, role, password_hash, profile_completed from users where username = ${parsed.data.username} and is_active`;
-  const ok = await bcrypt.compare(parsed.data.password, user?.password_hash ?? DUMMY_HASH);
+  // A stored value that is not a bcrypt hash (e.g. a password typed straight into the database)
+  // makes bcrypt throw; treat that as a failed login instead of a server error.
+  let ok = false;
+  try {
+    ok = await bcrypt.compare(parsed.data.password, user?.password_hash ?? DUMMY_HASH);
+  } catch (err) {
+    console.error(`[login] invalid password_hash for "${parsed.data.username}"`, err);
+  }
   if (!user || !ok) return { error: "Username หรือรหัสผ่านไม่ถูกต้อง", username };
 
   const store = await cookies();

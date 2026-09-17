@@ -55,6 +55,10 @@ Keep `DATABASE_POOL_MAX=1` when using the local PGlite server.
 
 Vercel serves HTTPS by default. The session cookie is `Secure` in production.
 
+## Managing accounts
+
+Passwords are bcrypt hashes. Never type a password into `users.password_hash` directly (the Table Editor included) — logins for that account then fail. Use `db/set-password.sql` in the Supabase SQL Editor, which hashes with `crypt(..., gen_salt('bf', 10))`, or the admin UI for technician accounts.
+
 ## Scripts
 
 | Command | What it does |
