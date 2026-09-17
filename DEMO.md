@@ -4,7 +4,8 @@ Reset to a clean state before presenting: `npm run db:reset`.
 
 ## Test accounts
 
-All passwords: **`demo1234`**. They are also listed in the "บัญชีทดสอบ" panel on the login page (tap an account to fill the form).
+Passwords are **not** stored in this repository or shown on the site. The project admin shares them privately.
+For a local database, `npm run db:seed` uses `SEED_PASSWORD` from `.env.local` (or prints a random one).
 
 | Username | Role | Notes |
 |---|---|---|

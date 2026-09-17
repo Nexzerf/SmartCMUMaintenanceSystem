@@ -4,6 +4,7 @@
  */
 import "./env";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 import postgres from "postgres";
 import { STATUS_LABEL, type Status } from "../lib/status";
 
@@ -159,7 +160,10 @@ async function main() {
     request_images, requests, request_code_counters, rooms, buildings, campuses, technician_skills,
     categories, users restart identity cascade`;
 
-  const hash = await bcrypt.hash("demo1234", 10);
+  // Passwords never live in the repo: use SEED_PASSWORD, or generate one and print it once.
+  const seedPassword = process.env.SEED_PASSWORD || randomBytes(9).toString("base64url");
+  if (!process.env.SEED_PASSWORD) console.log(`No SEED_PASSWORD set. Password for all seeded accounts: ${seedPassword}`);
+  const hash = await bcrypt.hash(seedPassword, 10);
 
   // Categories
   const catIds = {} as Record<CatKey, number>;

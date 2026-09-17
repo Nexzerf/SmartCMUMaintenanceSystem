@@ -1,21 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Eye, EyeOff, Info, KeyRound } from "lucide-react";
-import { startTransition, useActionState, useRef, useState } from "react";
+import { Eye, EyeOff, Info } from "lucide-react";
+import { startTransition, useActionState, useState } from "react";
 import { login, type LoginState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { FieldError, Label } from "@/components/ui/Field";
 import { Sheet } from "@/components/ui/Sheet";
 import { cn } from "@/lib/cn";
-
-const TEST_ACCOUNTS = [
-  { username: "student01", role: "ผู้แจ้ง · นักศึกษา" },
-  { username: "staff01", role: "ผู้แจ้ง · บุคลากร" },
-  { username: "tech01", role: "ช่าง · ไฟฟ้า/แอร์" },
-  { username: "tech02", role: "ช่าง · ประปา/อาคาร" },
-  { username: "admin01", role: "ผู้ดูแลระบบ" },
-];
 
 export function LoginForm({ expired }: { expired: boolean }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(login, {});
@@ -23,17 +14,9 @@ export function LoginForm({ expired }: { expired: boolean }) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
-  const [accountsOpen, setAccountsOpen] = useState(false);
-  const passwordRef = useRef<HTMLInputElement>(null);
 
   // Users type only the part before "@"; anything from "@" onward is stripped.
   const onUsername = (v: string) => setUsername(v.split("@")[0].replace(/\s/g, ""));
-
-  const fill = (u: string) => {
-    setUsername(u);
-    setPassword("demo1234");
-    passwordRef.current?.focus();
-  };
 
   return (
     <>
@@ -89,7 +72,6 @@ export function LoginForm({ expired }: { expired: boolean }) {
             )}
           >
             <input
-              ref={passwordRef}
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
@@ -125,42 +107,8 @@ export function LoginForm({ expired }: { expired: boolean }) {
 
       <p className="mt-6 flex gap-2.5 rounded-[12px] bg-white px-4 py-3 text-[13px] leading-relaxed text-muted">
         <Info size={16} className="mt-0.5 shrink-0 text-orange-ink" aria-hidden />
-        <span>ต้นแบบสำหรับการนำเสนอ — กรุณาใช้บัญชีทดสอบ ห้ามกรอกรหัสผ่าน CMU จริง</span>
+        <span>ต้นแบบสำหรับการนำเสนอ — ใช้บัญชีที่ได้รับจากผู้ดูแลระบบ ห้ามกรอกรหัสผ่าน CMU จริง</span>
       </p>
-
-      <div className="mt-3 overflow-hidden rounded-[16px] bg-white">
-        <button
-          type="button"
-          onClick={() => setAccountsOpen((o) => !o)}
-          className="flex min-h-12 w-full items-center gap-3 px-4 text-left"
-          aria-expanded={accountsOpen}
-        >
-          <KeyRound size={18} className="text-brand" aria-hidden />
-          <span className="flex-1 text-[15px] font-semibold">บัญชีทดสอบ</span>
-          <motion.span animate={{ rotate: accountsOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-            <ChevronDown size={18} className="text-muted" aria-hidden />
-          </motion.span>
-        </button>
-        <AnimatePresence initial={false}>
-          {accountsOpen ? (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
-              <p className="px-4 pb-2 text-[13px] text-muted">
-                รหัสผ่านทุกบัญชี: <span className="font-semibold text-ink">demo1234</span> · แตะเพื่อกรอกอัตโนมัติ
-              </p>
-              <ul>
-                {TEST_ACCOUNTS.map((a) => (
-                  <li key={a.username} className="border-t border-line">
-                    <button type="button" onClick={() => fill(a.username)} className="flex min-h-12 w-full items-center justify-between gap-3 px-4 text-left hover:bg-[#fafafb]">
-                      <span className="tabular-nums text-[14px]">{a.username}</span>
-                      <span className="text-[13px] text-muted">{a.role}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </div>
 
       <Sheet
         open={forgotOpen}

@@ -69,7 +69,7 @@ Paths are relative to the project root. "Verified" notes how each item was check
 |---|---|
 | Single login page, fixed `@cmu.ac.th` suffix, strips `@…` | `app/login/LoginForm.tsx` |
 | bcrypt compare in Server Action, httpOnly cookie, role redirect, Thai error | `app/actions/auth.ts`, `lib/auth/session.ts` |
-| "ลืมรหัสผ่าน?" sheet, prototype notice, test-account panel, no sign-up | `LoginForm.tsx` |
+| "ลืมรหัสผ่าน?" sheet, prototype notice, no sign-up (test accounts are shared privately, not shown on the page) | `LoginForm.tsx` |
 | Status machine in one function; history + notifications per transition | `lib/requests/transition.ts` |
 
 ## Non-functional requirements
