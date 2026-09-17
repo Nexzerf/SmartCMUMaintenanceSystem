@@ -36,7 +36,8 @@ Keep `DATABASE_POOL_MAX=1` when using the local PGlite server.
 
 1. **Create a Supabase project.**
 2. **Database (no local tools needed)**: open *SQL Editor* in the Supabase dashboard, paste the whole of `db/supabase-setup.sql`, and press **Run**.
-   It creates the tables, enables RLS, creates the public `request-images` bucket, and loads the demo data (timestamps are relative to when you run it).
+   It creates the tables in the `"SmartCMU"` schema, enables RLS, creates the public `request-images` bucket, and loads the demo data (timestamps are relative to when you run it).
+   It also runs `alter role postgres set search_path to "SmartCMU", public, extensions` so the app, which connects as `postgres` through the pooler, finds the tables without schema-qualified queries (the pooler ignores `search_path` in the connection URL). Use `SETUP_SCHEMA=<name> npm run db:export-sql` for a different schema name.
    Re-running it resets the data. To regenerate the file after changing migrations or the seed: `npm run db:reset && npm run db:export-sql`.
 3. **Keys**: from *Project Settings → API* copy the project URL, `anon` key, and `service_role` key.
 4. **Vercel**: import the repository and set these environment variables:
