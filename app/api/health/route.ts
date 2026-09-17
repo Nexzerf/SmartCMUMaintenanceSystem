@@ -20,15 +20,21 @@ export async function GET() {
   };
 
   let database: Record<string, unknown> = { ok: false };
+  let connection: Record<string, unknown> = {};
   try {
-    // Role and search_path first: they explain "relation does not exist" when the wrong role is used.
+    // Report the role and its search_path even when the tables are not visible:
+    // that is what explains "relation does not exist".
     const [who] = await sql<{ db_user: string; search_path: string }[]>`
       select current_user as db_user, current_setting('search_path') as search_path`;
+    connection = { ...who };
+    const schemas = await sql<{ nspname: string }[]>`
+      select nspname from pg_namespace where nspname in ('SmartCMU', 'public') order by nspname`;
+    connection.schemas_visible = schemas.map((s) => s.nspname);
     const [row] = await sql<{ users: number; requests: number; bad_hashes: number }[]>`
       select (select count(*)::int from users) as users,
              (select count(*)::int from requests) as requests,
              (select count(*)::int from users where password_hash !~ '^\\$2[aby]\\$') as bad_hashes`;
-    database = { ok: true, ...who, ...row };
+    database = { ok: true, ...row };
   } catch (err) {
     const message = err instanceof Error ? err.message.slice(0, 200) : "unknown error";
     const hint = message.includes("does not exist")
@@ -36,6 +42,7 @@ export async function GET() {
       : undefined;
     database = { ok: false, error: message, hint };
   }
+  database = { ...database, ...connection };
 
   const ready = Object.values(env).every(Boolean) && database.ok === true && database.bad_hashes === 0;
   return NextResponse.json({ ready, env, database }, { status: ready ? 200 : 503, headers: { "Cache-Control": "no-store" } });
