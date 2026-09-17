@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff, Info } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { startTransition, useActionState, useState } from "react";
 import { login, type LoginState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
@@ -104,11 +104,6 @@ export function LoginForm({ expired }: { expired: boolean }) {
           {pending ? "กำลังเข้าสู่ระบบ" : "เข้าสู่ระบบ"}
         </Button>
       </form>
-
-      <p className="mt-6 flex gap-2.5 rounded-[12px] bg-white px-4 py-3 text-[13px] leading-relaxed text-muted">
-        <Info size={16} className="mt-0.5 shrink-0 text-orange-ink" aria-hidden />
-        <span>ต้นแบบสำหรับการนำเสนอ — ใช้บัญชีที่ได้รับจากผู้ดูแลระบบ ห้ามกรอกรหัสผ่าน CMU จริง</span>
-      </p>
 
       <Sheet
         open={forgotOpen}
