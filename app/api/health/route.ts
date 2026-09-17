@@ -21,13 +21,20 @@ export async function GET() {
 
   let database: Record<string, unknown> = { ok: false };
   try {
+    // Role and search_path first: they explain "relation does not exist" when the wrong role is used.
+    const [who] = await sql<{ db_user: string; search_path: string }[]>`
+      select current_user as db_user, current_setting('search_path') as search_path`;
     const [row] = await sql<{ users: number; requests: number; bad_hashes: number }[]>`
       select (select count(*)::int from users) as users,
              (select count(*)::int from requests) as requests,
              (select count(*)::int from users where password_hash !~ '^\\$2[aby]\\$') as bad_hashes`;
-    database = { ok: true, ...row };
+    database = { ok: true, ...who, ...row };
   } catch (err) {
-    database = { ok: false, error: err instanceof Error ? err.message.slice(0, 200) : "unknown error" };
+    const message = err instanceof Error ? err.message.slice(0, 200) : "unknown error";
+    const hint = message.includes("does not exist")
+      ? "The database user cannot see the app tables. Put the smartcmu_app connection string in DATABASE_URL."
+      : undefined;
+    database = { ok: false, error: message, hint };
   }
 
   const ready = Object.values(env).every(Boolean) && database.ok === true && database.bad_hashes === 0;
