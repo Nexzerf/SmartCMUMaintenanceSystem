@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+/*
+ * LINE Seed Sans TH is the brand typeface. It is not on Google Fonts, so it is used when installed
+ * locally or when its .woff2 files are placed in /public/fonts (see README). Otherwise IBM Plex Sans Thai loads.
+ */
+@font-face {
+  font-family: "LINE Seed Sans TH";
+  font-weight: 400;
+  font-display: swap;
+  src: local("LINE Seed Sans TH"), local("LINESeedSansTH-Regular"), local("LINESeedSansTH_Rg");
+}
+@font-face {
+  font-family: "LINE Seed Sans TH";
+  font-weight: 700;
+  font-display: swap;
+  src: local("LINE Seed Sans TH Bold"), local("LINESeedSansTH-Bold"), local("LINESeedSansTH_Bd");
+}
+
+@theme {
+  --font-sans: "LINE Seed Sans TH", var(--font-plex), ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand: #5b2c83;
+  --color-brand-hover: #4c2470;
+  --color-brand-soft: #efe8f5;
+  --color-ink: #111111;
+  --color-muted: #6b6b6b;
+  --color-page: #f5f5f7;
+  --color-fill: #ebebee;
+  --color-fill-strong: #dedee3;
+  --color-line: #e8e8ec;
+
+  --color-gray-tint: #eeeef0;
+  --color-gray-ink: #4a4a50;
+  --color-blue-tint: #e6f0ff;
+  --color-blue-ink: #0a58ca;
+  --color-orange-tint: #fff1e0;
+  --color-orange-ink: #9a4a00;
+  --color-green-tint: #e5f6ea;
+  --color-green-ink: #17693a;
+  --color-red-tint: #fdeaea;
+  --color-red-ink: #b42318;
+
+  --radius-card: 16px;
+  --radius-control: 12px;
+
+  --shadow-sheet: 0 -8px 40px rgba(17, 17, 17, 0.12);
+  --shadow-float: 0 8px 30px rgba(17, 17, 17, 0.1);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* In the base layer so utilities (outline-none, ring-*) can override it. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+  /* Text fields show a rounded ring that follows the field's shape instead of a square outline. */
+  input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+  }
+}
+
+@keyframes soft-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(10, 88, 202, 0.35); }
+  70% { box-shadow: 0 0 0 10px rgba(10, 88, 202, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(10, 88, 202, 0); }
+}
+.pulse-dot { animation: soft-pulse 2s ease-out infinite; }
+
+@keyframes shimmer {
+  0% { background-position: -300px 0; }
+  100% { background-position: 300px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #ececef 0px, #f6f6f8 120px, #ececef 240px);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease-out infinite;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton { animation: none; }
+}

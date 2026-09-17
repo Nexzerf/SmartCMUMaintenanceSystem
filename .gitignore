@@ -1,0 +1,10 @@
+node_modules
+.next
+.env
+.env.local
+.pglite
+public/uploads/*
+!public/uploads/.gitkeep
+*.tsbuildinfo
+next-env.d.ts
+.vercel
