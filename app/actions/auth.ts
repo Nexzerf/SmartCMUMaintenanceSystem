@@ -26,8 +26,15 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   const username = String(formData.get("username") ?? "").split("@")[0];
   if (!parsed.success) return { error: parsed.error.issues[0].message, username };
 
-  const [user] = await sql<{ id: string; username: string; role: Role; password_hash: string; profile_completed: boolean }[]>`
-    select id, username, role, password_hash, profile_completed from users where username = ${parsed.data.username} and is_active`;
+  let user: { id: string; username: string; role: Role; password_hash: string; profile_completed: boolean } | undefined;
+  try {
+    [user] = await sql<{ id: string; username: string; role: Role; password_hash: string; profile_completed: boolean }[]>`
+      select id, username, role, password_hash, profile_completed from users where username = ${parsed.data.username} and is_active`;
+  } catch (err) {
+    // Misconfigured deployment or database outage: say so instead of returning a blank 500 page.
+    console.error("[login] database error", err);
+    return { error: "ระบบเชื่อมต่อฐานข้อมูลไม่ได้ กรุณาลองใหม่อีกครั้ง หรือแจ้งผู้ดูแลระบบ", username };
+  }
   // A stored value that is not a bcrypt hash (e.g. a password typed straight into the database)
   // makes bcrypt throw; treat that as a failed login instead of a server error.
   let ok = false;
@@ -38,8 +45,16 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   }
   if (!user || !ok) return { error: "Username หรือรหัสผ่านไม่ถูกต้อง", username };
 
+  let token: string;
+  try {
+    token = await signSession({ uid: user.id, role: user.role, username: user.username });
+  } catch (err) {
+    // SESSION_SECRET missing or too short.
+    console.error("[login] cannot sign session", err);
+    return { error: "ตั้งค่าระบบไม่ครบ (SESSION_SECRET) กรุณาแจ้งผู้ดูแลระบบ", username };
+  }
   const store = await cookies();
-  store.set(SESSION_COOKIE, await signSession({ uid: user.id, role: user.role, username: user.username }), sessionCookieOptions);
+  store.set(SESSION_COOKIE, token, sessionCookieOptions);
 
   if (user.role === "reporter" && !user.profile_completed) redirect("/profile/setup");
   redirect(ROLE_HOME[user.role]);

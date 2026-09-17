@@ -20,7 +20,8 @@ export async function middleware(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   const session = await verifySession(token);
 
-  if (pathname === "/logout") return NextResponse.next();
+  // Public: clears a stale cookie / reports deployment readiness without leaking values.
+  if (pathname === "/logout" || pathname === "/api/health") return NextResponse.next();
 
   if (pathname === "/login") {
     if (session) return NextResponse.redirect(new URL(ROLE_HOME[session.role], req.url));
