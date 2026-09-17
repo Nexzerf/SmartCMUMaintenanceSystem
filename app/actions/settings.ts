@@ -1,9 +1,10 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { actionError, type ActionResult } from "@/lib/actions/result";
+import { CATALOG_TAG } from "@/lib/cache-tags";
 import { requireActionUser } from "@/lib/auth/guard";
 import { sql } from "@/lib/db";
 
@@ -11,6 +12,7 @@ const name = (label: string) => z.string().trim().min(1, `กรุณากร�
 const optId = z.number().int().positive().optional();
 
 function ok() {
+  revalidateTag(CATALOG_TAG);
   revalidatePath("/admin/settings");
   revalidatePath("/request/new");
   return { ok: true as const };

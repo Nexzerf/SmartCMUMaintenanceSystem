@@ -225,25 +225,46 @@ export async function pingUsers(userIds: string[]) {
 
 let lastAutoCloseCheck = 0;
 
-/** Auto-close completed requests older than AUTO_CLOSE_DAYS. Called on read; throttled unless forced. */
+/**
+ * Auto-close completed requests older than AUTO_CLOSE_DAYS. Called on read; throttled unless forced.
+ * Set-based on purpose: pages run this on every load, so the common "nothing to close" case
+ * costs a single round trip instead of a scan plus one transaction per request.
+ */
 export async function runAutoClose(force = false) {
   if (!force && Date.now() - lastAutoCloseCheck < 30_000) return 0;
   lastAutoCloseCheck = Date.now();
-  const due = await sql<{ id: string }[]>`
-    select id from requests
-    where status = 'completed' and completed_at < now() - make_interval(days => ${AUTO_CLOSE_DAYS})`;
-  const touched = new Set<string>();
-  for (const { id } of due) {
-    const users = await sql.begin((tx) =>
-      transitionInTx(tx, {
-        requestId: id,
-        to: "closed",
-        actor: { id: null, role: "system" },
-        note: `ปิดงานอัตโนมัติ เนื่องจากไม่มีการยืนยันภายใน ${AUTO_CLOSE_DAYS} วัน`,
-      }),
-    );
-    users.forEach((u) => touched.add(u));
-  }
-  if (due.length) await pingUsers([...touched]);
-  return due.length;
+  const note = `ปิดงานอัตโนมัติ เนื่องจากไม่มีการยืนยันภายใน ${AUTO_CLOSE_DAYS} วัน`;
+
+  const closed = await sql<{ id: string; reporter_id: string; assigned_technician_id: string | null }[]>`
+    update requests set status = 'closed', closed_at = now(), updated_at = now()
+    where status = 'completed' and completed_at < now() - make_interval(days => ${AUTO_CLOSE_DAYS})
+    returning id, reporter_id, assigned_technician_id`;
+  if (closed.length === 0) return 0;
+
+  const ids = closed.map((r) => r.id);
+  await sql`insert into status_history (request_id, from_status, to_status, actor_id, note)
+    select id, 'completed', 'closed', null, ${note} from requests where id = any(${ids}::uuid[])`;
+  await sql`
+    insert into notifications (user_id, request_id, type, title, body)
+    select audience.user_id, audience.request_id, 'closed',
+      case when audience.is_technician then 'ระบบปิดงานอัตโนมัติ' else 'ปิดงานแล้ว' end,
+      case when audience.is_technician then r.code || ' ปิดงานอัตโนมัติ เนื่องจากผู้แจ้งไม่ได้ยืนยัน'
+           else 'คำร้อง ' || r.code || ' ปิดงานอัตโนมัติ เนื่องจากไม่มีการยืนยัน ขอบคุณที่แจ้งเข้ามา' end
+    from (
+      select reporter_id as user_id, id as request_id, false as is_technician from requests where id = any(${ids}::uuid[])
+      union
+      select f.user_id, f.request_id, false from request_followers f where f.request_id = any(${ids}::uuid[])
+      union
+      select assigned_technician_id, id, true from requests
+        where id = any(${ids}::uuid[]) and assigned_technician_id is not null
+    ) audience
+    join requests r on r.id = audience.request_id`;
+
+  const followers = await sql<{ user_id: string }[]>`select distinct user_id from request_followers where request_id = any(${ids}::uuid[])`;
+  await pingUsers([
+    ...closed.map((r) => r.reporter_id),
+    ...closed.flatMap((r) => (r.assigned_technician_id ? [r.assigned_technician_id] : [])),
+    ...followers.map((f) => f.user_id),
+  ]);
+  return closed.length;
 }

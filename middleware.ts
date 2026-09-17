@@ -31,8 +31,11 @@ export async function middleware(req: NextRequest) {
   if (!session) {
     if (pathname.startsWith("/api/")) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     const url = new URL("/login", req.url);
+    // no-store below: a redirect to /login must not be cached for other visitors either.
     if (token) url.searchParams.set("expired", "1");
     const res = NextResponse.redirect(url);
+    res.headers.set("Cache-Control", "private, no-store");
+    res.headers.set("Netlify-CDN-Cache-Control", "no-store");
     if (token) res.cookies.delete(SESSION_COOKIE);
     return res;
   }
@@ -45,6 +48,9 @@ export async function middleware(req: NextRequest) {
   }
 
   const res = NextResponse.next();
+  // Signed-in pages are per-user: never let a CDN or proxy reuse them for someone else.
+  res.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate");
+  res.headers.set("Netlify-CDN-Cache-Control", "no-store");
   if (!PASSIVE_PATHS.includes(pathname)) {
     // Sliding idle timeout: every active request extends the session by 30 minutes.
     res.cookies.set(SESSION_COOKIE, await signSession(session), sessionCookieOptions);

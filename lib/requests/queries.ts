@@ -1,5 +1,7 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { sql } from "@/lib/db";
+import { CATALOG_TAG } from "@/lib/cache-tags";
 import type { CurrentUser } from "@/lib/auth/guard";
 import type { Status, Urgency } from "@/lib/status";
 
@@ -174,7 +176,7 @@ export type Catalog = {
   rooms: { id: number; building_id: number; floor: number; name_th: string }[];
 };
 
-export async function getCatalog(includeInactive = false): Promise<Catalog> {
+async function loadCatalog(includeInactive: boolean): Promise<Catalog> {
   const [categories, campuses, buildings, rooms] = await Promise.all([
     sql<Catalog["categories"]>`select id, name_th, icon, is_active from categories ${includeInactive ? sql`` : sql`where is_active`} order by sort_order, id`,
     sql<Catalog["campuses"]>`select id, name_th from campuses order by id`,
@@ -182,6 +184,13 @@ export async function getCatalog(includeInactive = false): Promise<Catalog> {
     sql<Catalog["rooms"]>`select id, building_id, floor, name_th from rooms order by floor, name_th`,
   ]);
   return { categories, campuses, buildings, rooms };
+}
+
+/** Master data changes rarely, so the reporter form does not pay for four queries on every load. */
+const cachedCatalog = unstable_cache(() => loadCatalog(false), ["catalog-active"], { tags: [CATALOG_TAG], revalidate: 600 });
+
+export async function getCatalog(includeInactive = false): Promise<Catalog> {
+  return includeInactive ? loadCatalog(true) : cachedCatalog();
 }
 
 export type NotificationItem = {
