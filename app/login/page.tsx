@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="min-h-dvh lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       {/* Desktop-only brand panel */}
-      <section className="hidden flex-col justify-between bg-brand px-14 py-12 text-white lg:flex">
+      <section className="hidden flex-col justify-center gap-14 bg-brand px-14 py-12 text-white lg:flex">
         <div className="flex items-center gap-3">
           <Logo inverted />
           <div>
@@ -25,7 +25,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </div>
         <div className="max-w-[440px]">
           <h2 className="text-[36px] font-bold leading-tight tracking-tight">เจออะไรเสียในมหาวิทยาลัย แจ้งได้ในไม่ถึง 3 นาที</h2>
-          <ul className="mt-10 space-y-6">
+          <ul className="mt-9 space-y-6">
             {STEPS.map((s) => (
               <li key={s.title} className="flex gap-4">
                 <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-white/15" aria-hidden>
@@ -39,7 +39,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             ))}
           </ul>
         </div>
-        <p className="text-[13px] text-white/70">ต้นแบบสำหรับรายวิชา 954244 System Analysis and Design for Modern Management</p>
       </section>
 
       <div className="flex flex-col items-center px-5 py-10 sm:justify-center lg:bg-page">
