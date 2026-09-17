@@ -37,14 +37,15 @@ Keep `DATABASE_POOL_MAX=1` when using the local PGlite server.
 1. **Create a Supabase project.**
 2. **Database (no local tools needed)**: open *SQL Editor* in the Supabase dashboard, paste the whole of `db/supabase-setup.sql`, and press **Run**.
    It creates the tables in the `"SmartCMU"` schema, enables RLS, creates the public `request-images` bucket, and loads the demo data (timestamps are relative to when you run it).
-   It also runs `alter role postgres set search_path to "SmartCMU", public, extensions` so the app, which connects as `postgres` through the pooler, finds the tables without schema-qualified queries (the pooler ignores `search_path` in the connection URL). Use `SETUP_SCHEMA=<name> npm run db:export-sql` for a different schema name.
-   Re-running it resets the data. To regenerate the file after changing migrations or the seed: `npm run db:reset && npm run db:export-sql`.
+   Re-running it resets the data. To regenerate the file after changing migrations or the seed: `npm run db:reset && npm run db:export-sql` (`SETUP_SCHEMA=<name>` for another schema name).
+   Then run `db/supabase-app-role.sql` (replace `CHANGE_ME` with a random letters-and-digits password). It creates the `smartcmu_app` login role with `search_path = "SmartCMU"`, grants it access to that schema only, and adds RLS policies for it. The shared `postgres` role is left untouched, so other work in `public` is unaffected.
+   App `DATABASE_URL`: `postgresql://smartcmu_app.<project-ref>:<password>@<pooler-host>:6543/postgres` (the pooler ignores `search_path` in the URL, which is why it lives on the role).
 3. **Keys**: from *Project Settings → API* copy the project URL, `anon` key, and `service_role` key.
 4. **Vercel**: import the repository and set these environment variables:
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | Supabase transaction pooler URL |
+| `DATABASE_URL` | Transaction pooler URL for the `smartcmu_app` role |
 | `DATABASE_POOL_MAX` | leave empty (defaults to 5) |
 | `SESSION_SECRET` | 32+ random characters (`openssl rand -hex 32`) |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://<project>.supabase.co` |

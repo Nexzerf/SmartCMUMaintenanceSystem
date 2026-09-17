@@ -4,7 +4,7 @@
  * Timestamps are written relative to now(), so the demo data stays "recent" whenever it is run.
  *
  * All app tables are created in a dedicated schema (default "SmartCMU", override with SETUP_SCHEMA),
- * and the postgres role's search_path is pointed at it so the app's unqualified queries find the tables.
+ * The app connects with its own role (see db/supabase-app-role.sql), whose search_path points at this schema.
  *
  *   npm run db:reset && npm run db:export-sql
  */
@@ -83,9 +83,7 @@ async function main() {
 
   out.push(
     "",
-    "-- ===== make the app find these tables =====",
-    `-- The app connects as "postgres" (through the Supabase pooler) and uses unqualified table names.`,
-    `alter role postgres set search_path to ${SEARCH_PATH};`,
+    "-- Next: run db/supabase-app-role.sql to create the app's own login role for this schema.",
   );
 
   const target = path.join(process.cwd(), "db", "supabase-setup.sql");
