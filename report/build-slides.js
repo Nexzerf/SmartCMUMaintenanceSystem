@@ -281,9 +281,9 @@ function bulletsText(s, items, x, y, w, h, size = 17) {
 {
   const s = page("ต้นแบบเชิงโต้ตอบ", "Figma + เว็บที่ใช้งานได้จริง");
   const stats = [
-    ["72", "หน้าจอต่อชุด"],
+    ["76", "หน้าจอต่อชุด"],
     ["2", "ชุด: Wireframe และ UI"],
-    ["367", "เส้น Interaction ต่อชุด"],
+    ["401", "เส้น Interaction ต่อชุด"],
     ["6", "Flow: 3 บทบาท × มือถือ/เดสก์ท็อป"],
   ];
   stats.forEach(([v, t], i) => {

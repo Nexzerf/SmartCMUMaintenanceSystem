@@ -1698,10 +1698,35 @@ function T01() {
   text(ht, "มีงานใหม่รอรับ 2 งาน", { size: 14, c: "muted" });
   bellButton(head, 1, "T04");
   const b = body(s.col, { p: [16, 20, 24, 20], gap: 14 });
-  segmented(b, ["งานใหม่|2", "กำลังทำ|1", "รออะไหล่|1", "เสร็จแล้ว|5"], 0, { hug: !isD() });
+  segmented(b, JOB_TABS, 0, { hug: !isD(), links: [null, null, null, "T01f"] });
   requestRows(b, [
     { cat: "AirVent", urgency: "normal", loc: LOC, status: "assigned", code: "MR-2609-0042", time: "10 นาทีที่แล้ว", to: "T02" },
     { cat: "Zap", urgency: "urgent", loc: LOC_RB5_1, status: "assigned", code: "MR-2609-0041", time: "35 นาทีที่แล้ว", to: "T02" },
+  ]);
+  return finish(s);
+}
+
+const JOB_TABS = ["งานใหม่|2", "กำลังทำ|1", "รออะไหล่|1", "เสร็จแล้ว|5"];
+
+// "เสร็จแล้ว" tab: jobs waiting for the reporter's confirmation, then closed ones.
+function T01f() {
+  const s = screen("T01f", "งานของฉัน เสร็จแล้ว", { role: "tech", nav: "jobs", tabs: true, colW: 900 });
+  const head = box({ name: "Header", dir: "h", gap: 12, cross: "CENTER", p: hp([16, 20, 4, 20]) });
+  put(s.col, head, { fillW: true });
+  const ht = box({ name: "Titles", gap: 0 });
+  put(head, ht, { grow: true });
+  text(ht, "ช่างสมศักดิ์", { size: 15, c: "muted" });
+  text(ht, "งานของฉัน", { size: 28, w: "b", lh: 130 });
+  text(ht, "เสร็จแล้ว 5 งานในเดือนนี้", { size: 14, c: "muted" });
+  bellButton(head, 1, "T04");
+  const b = body(s.col, { p: [16, 20, 24, 20], gap: 14 });
+  segmented(b, JOB_TABS, 3, { hug: !isD(), links: ["T01", null, null, null] });
+  requestRows(b, [
+    { cat: "AirVent", urgency: "normal", loc: LOC, status: "completed", code: "MR-2609-0042", time: "20 นาทีที่แล้ว", to: "T02f" },
+    { cat: "Droplets", urgency: "normal", loc: LOC_HB7, status: "closed", code: "MR-2609-0012", time: "3 วันที่แล้ว", to: "T02f" },
+    { cat: "Zap", urgency: "urgent", loc: LOC_ILC, status: "closed", code: "MR-2609-0009", time: "5 วันที่แล้ว", to: "T02f" },
+    { cat: "Zap", urgency: "normal", loc: LOC_RB5, status: "closed", code: "MR-2609-0006", time: "1 สัปดาห์ที่แล้ว", to: "T02f" },
+    { cat: "AirVent", urgency: "low", loc: LOC_DORM, status: "closed", code: "MR-2609-0003", time: "2 สัปดาห์ที่แล้ว", to: "T02f" },
   ]);
   return finish(s);
 }
@@ -1732,13 +1757,24 @@ function jobActions(parent, state) {
     button(row, "ซ่อมเสร็จแล้ว", { size: "lg", grow: !isD(), block: isD(), to: "T03" });
   }
   if (state === "waiting_parts") button(parent, "ได้อะไหล่แล้ว กลับไปซ่อมต่อ", { size: "lg", block: true, to: "T02b" });
+  if (state === "completed") {
+    const n = box({ name: "Waiting notice", dir: "h", gap: 10, cross: "CENTER", p: [12, 14], fill: "greenT", r: 12 });
+    put(parent, n, { fillW: true });
+    icon(n, "check-circle", 20, "greenI");
+    const t = box({ name: "Text" });
+    put(n, t, { grow: true });
+    text(t, "ส่งงานแล้ว รอผู้แจ้งยืนยัน", { size: 15, w: "sb", c: "greenI" });
+    text(t, "ระบบจะปิดงานอัตโนมัติใน 3 วัน ถ้าผู้แจ้งไม่ดำเนินการ", { size: 13, c: "muted", fillW: true });
+    button(parent, "กลับไปงานของฉัน", { size: "lg", v: "secondary", block: true, to: "T01f" });
+  }
 }
 
-// state: assigned | in_progress | waiting_parts
+// state: assigned | in_progress | waiting_parts | completed
 function techDetail(key, state) {
-  const titles = { assigned: "รายละเอียดงาน มอบหมายแล้ว", in_progress: "รายละเอียดงาน กำลังซ่อม", waiting_parts: "รายละเอียดงาน รออะไหล่" };
+  const titles = { assigned: "รายละเอียดงาน มอบหมายแล้ว", in_progress: "รายละเอียดงาน กำลังซ่อม", waiting_parts: "รายละเอียดงาน รออะไหล่", completed: "รายละเอียดงาน ซ่อมเสร็จ" };
+  const done = state === "completed";
   const s = screen(key, titles[state], { role: "tech", nav: "jobs", tabs: true, colW: DESK_W });
-  pageHeader(s.col, { title: "รายละเอียดงาน", back: ["งานของฉัน", "T01"] });
+  pageHeader(s.col, { title: "รายละเอียดงาน", back: ["งานของฉัน", done ? "T01f" : "T01"] });
   const b = body(s.col, { p: [12, 20, 16, 20], gap: 18 });
   const cols = twoCols(b, DESK_W - 24 - 400);
   requestHeaderCard(cols[0], { cat: "AirVent", code: "MR-2609-0042", loc: LOC, status: state });
@@ -1749,16 +1785,26 @@ function techDetail(key, state) {
   }
   problemSection(cols[0]);
   reporterSection(cols[0]);
+  if (done) {
+    detailSection(cols[0], "ผลการซ่อม", function (cc) {
+      text(cc, "สาเหตุ", { size: 13, c: "muted" });
+      text(cc, "ท่อน้ำทิ้งแอร์ตัน และน้ำยาแอร์ต่ำ", { size: 15, fillW: true });
+      text(cc, "อะไหล่ที่ใช้", { size: 13, c: "muted" });
+      text(cc, "น้ำยา R32 1 กก.", { size: 15 });
+      text(cc, "รูปหลังซ่อม", { size: 13, c: "muted" });
+      photoGrid(cc, 1, 96);
+    });
+  }
   detailSection(cols[1], "ความคืบหน้า", function (c) {
     const steps = [
       { label: FLOW[0], state: "done", time: "17 ก.ย. 69 14:30" },
       { label: FLOW[1], state: "done", time: "17 ก.ย. 69 15:02" },
       { label: FLOW[2], state: state === "assigned" ? "current" : "done", time: "17 ก.ย. 69 15:10", actor: "ช่างสมศักดิ์ ใจดี" },
-      { label: FLOW[3], state: state === "assigned" ? "future" : "current", time: state === "assigned" ? null : "18 ก.ย. 69 09:15", events: state === "waiting_parts" ? [{ label: "รออะไหล่", note: "สั่งน้ำยาแอร์แล้ว คาดว่าได้พรุ่งนี้", tone: "orange" }] : [] },
-      { label: FLOW[4], state: "future" },
+      { label: FLOW[3], state: state === "assigned" ? "future" : done ? "done" : "current", time: state === "assigned" ? null : "18 ก.ย. 69 09:15", events: state === "waiting_parts" || done ? [{ label: "รออะไหล่", note: "สั่งน้ำยาแอร์แล้ว คาดว่าได้พรุ่งนี้", tone: "orange" }] : [] },
+      { label: FLOW[4], state: done ? "current" : "future", time: done ? "19 ก.ย. 69 11:40" : null },
       { label: FLOW[5], state: "future" },
     ];
-    timeline(c, steps, state === "waiting_parts" ? "orange" : "blue");
+    timeline(c, steps, state === "waiting_parts" ? "orange" : done ? "green" : "blue");
   });
   if (!isD()) {
     const a = box({ name: "Job actions", gap: 8, p: [12, 20, 16, 20], fill: "page" });
@@ -1785,7 +1831,7 @@ function T03() {
     photoGrid(ph, 1, 104, { addTile: "1/3" });
     input(s, { label: "สาเหตุ", value: "ท่อน้ำทิ้งแอร์ตัน ทำความสะอาดแล้ว" });
     input(s, { label: "อะไหล่ที่ใช้", optional: true, value: "น้ำยา R32 1 กก." });
-    button(s, "ยืนยันซ่อมเสร็จ", { size: "lg", block: true, to: "T01" });
+    button(s, "ยืนยันซ่อมเสร็จ", { size: "lg", block: true, to: "T02f" });
   });
 }
 
@@ -1797,7 +1843,7 @@ function T04() {
     { kind: "job", title: "งานใหม่เข้ามา", body: "MR-2609-0042 · เครื่องปรับอากาศ · CAMT301", time: "10 นาที", unread: true, to: "T02" },
     { kind: "job", title: "งานใหม่เข้ามา", body: "MR-2609-0041 · ไฟฟ้า · RB5 อาคารเรียนรวม 5 ห้อง RB5103", time: "35 นาที", to: "T02" },
     { kind: "reopened", title: "ผู้แจ้งแจ้งว่ายังไม่หาย", body: "MR-2609-0017 · HB7 ห้อง HB7402 งานถูกส่งกลับให้เจ้าหน้าที่", time: "1 วัน", to: "T02" },
-    { kind: "closed", title: "ผู้แจ้งยืนยันงานแล้ว", body: "MR-2609-0012 ปิดงานเรียบร้อย", time: "3 วัน", to: "T02" },
+    { kind: "closed", title: "ผู้แจ้งยืนยันงานแล้ว", body: "MR-2609-0012 ปิดงานเรียบร้อย", time: "3 วัน", to: "T01f" },
   ]);
   return finish(s);
 }
@@ -2382,9 +2428,11 @@ const REPORTER = [
 const TECH = [
   function () { return loginScreen("T00", "T01", null, "tech01"); },
   T01,
+  T01f,
   function () { return techDetail("T02", "assigned"); },
   function () { return techDetail("T02b", "in_progress"); },
   function () { return techDetail("T02c", "waiting_parts"); },
+  function () { return techDetail("T02f", "completed"); },
   T03w, T03, T04, T05,
 ];
 const ADMIN = [
@@ -2398,7 +2446,7 @@ const ADMIN = [
 const GROUPS = [
   { title: "ผู้แจ้ง · มือถือ 390 × 844", device: "m", screens: REPORTER, note: "เข้าสู่ระบบ → ตั้งโปรไฟล์ → แจ้งซ่อม 4 ขั้น → ติดตามสถานะ → ยืนยัน/ให้คะแนน" },
   { title: "ผู้แจ้ง · เดสก์ท็อป 1440 × 900", device: "d", screens: REPORTER, note: "หน้าเดียวกันบนจอคอม: แถบเมนูซ้าย หน้าแรกและหน้าติดตามแบ่ง 2 คอลัมน์" },
-  { title: "ช่าง · มือถือ 390 × 844", device: "m", screens: TECH, note: "เข้าสู่ระบบ → งานใหม่ → รับงาน → รออะไหล่ → ซ่อมเสร็จ แนบรูปหลังซ่อม" },
+  { title: "ช่าง · มือถือ 390 × 844", device: "m", screens: TECH, note: "เข้าสู่ระบบ → งานใหม่ → รับงาน → รออะไหล่ → ซ่อมเสร็จ แนบรูปหลังซ่อม → งานเสร็จแล้ว" },
   { title: "ช่าง · เดสก์ท็อป 1440 × 900", device: "d", screens: TECH, note: "หน้าเดียวกันบนจอคอม: ปุ่มดำเนินการอยู่คอลัมน์ขวาคู่กับไทม์ไลน์" },
   { title: "ผู้ดูแลระบบ · มือถือ 390 × 844", device: "m", screens: ADMIN, note: "เมนูด้านบน · ตารางเลื่อนซ้าย-ขวา · แผงจัดการเต็มจอ" },
   { title: "ผู้ดูแลระบบ · เดสก์ท็อป 1440 × 900", device: "d", screens: ADMIN, note: "แดชบอร์ด → คำร้องทั้งหมด → รับเรื่อง → มอบหมายช่าง · ข้อมูลพื้นฐาน" },
