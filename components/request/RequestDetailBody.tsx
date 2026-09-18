@@ -3,7 +3,7 @@
 import { MapPin, Phone, Star, UserRound, Wrench } from "lucide-react";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { StatusPill, UrgencyTag } from "@/components/ui/StatusPill";
-import { formatDateTime, formatPhone } from "@/lib/format";
+import { floorLabel, formatDateTime, formatPhone } from "@/lib/format";
 import type { RequestDetail } from "@/lib/requests/queries";
 import type { serialize } from "@/lib/serialize";
 import { PhotoGallery } from "./PhotoGallery";
@@ -21,7 +21,7 @@ export function RequestHeader({ r, showUrgency = true }: { r: RequestDetailView;
           <p className="mt-1 flex items-start gap-1 text-[14px] text-muted">
             <MapPin size={15} className="mt-[3px] shrink-0" aria-hidden />
             <span>
-              {r.building_name} · ชั้น {r.floor} · {r.room_name}
+              {r.building_name} · {floorLabel(r.floor)} · {r.room_name}
               <span className="block text-[13px]">{r.campus_name}</span>
             </span>
           </p>

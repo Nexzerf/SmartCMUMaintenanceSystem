@@ -9,7 +9,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { LEGACY_BUILDINGS, LOCATIONS, roomFloor, roomName } from "../db/locations";
+import { LEGACY_BUILDINGS, LEGACY_ROOMS, LOCATIONS, roomFloor, roomName } from "../db/locations";
 
 const q = (s: string) => `'${s.replace(/'/g, "''")}'`;
 const out: string[] = [
@@ -35,7 +35,14 @@ for (const c of LOCATIONS) {
   }
 }
 
-out.push("", "-- 3. Rooms: add missing ones, fix floors of existing ones.");
+out.push("", "-- 3. Rename earlier rooms in place, so their requests keep them.");
+for (const r of LEGACY_ROOMS) {
+  out.push(
+    `update rooms set name_th = ${q(r.to)} where name_th = ${q(r.from)} and building_id = (select id from buildings where name_th = ${q(r.building)} order by id limit 1) and not exists (select 1 from rooms x where x.building_id = rooms.building_id and x.name_th = ${q(r.to)});`,
+  );
+}
+
+out.push("", "-- 4. Rooms: add missing ones, fix floors of existing ones.");
 for (const c of LOCATIONS) {
   for (const b of c.buildings) {
     const values = b.rooms.map((r) => `(${q(roomName(r))}, ${roomFloor(r)})`).join(", ");

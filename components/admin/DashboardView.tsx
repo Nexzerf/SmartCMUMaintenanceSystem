@@ -12,7 +12,7 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { cn } from "@/lib/cn";
 import type { DashboardData, RangeKey } from "@/lib/dashboard";
-import { relativeTime } from "@/lib/format";
+import { floorLabel, relativeTime } from "@/lib/format";
 import type { serialize } from "@/lib/serialize";
 import { STATUS_LABEL, type Status } from "@/lib/status";
 import { Card } from "./Card";
@@ -190,7 +190,7 @@ export function DashboardView({ data }: { data: View }) {
                         <span className="tabular-nums">{r.code}</span> · {r.category_name}
                       </p>
                       <p className="truncate text-[13px] text-muted">
-                        {r.building_name} · ชั้น {r.floor} · {r.room_name}
+                        {r.building_name} · {floorLabel(r.floor)} · {r.room_name}
                       </p>
                     </div>
                     <StatusPill status={r.status} />

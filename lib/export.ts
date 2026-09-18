@@ -5,6 +5,7 @@ import path from "node:path";
 import PDFDocument from "pdfkit";
 import type { DashboardData } from "@/lib/dashboard";
 import { STATUS_LABEL, URGENCY_LABEL } from "@/lib/status";
+import { floorLabel } from "@/lib/format";
 
 const TZ = "Asia/Bangkok";
 const fmt = (d: Date | null) =>
@@ -243,7 +244,7 @@ export async function buildPdf(data: DashboardData): Promise<Buffer> {
       r.code,
       new Intl.DateTimeFormat("th-TH", { timeZone: TZ, day: "numeric", month: "short", year: "2-digit" }).format(new Date(r.created_at)),
       r.category,
-      `${r.building} ชั้น ${r.floor} ${r.room}`,
+      `${r.building} ${floorLabel(r.floor)} ${r.room}`,
       URGENCY_LABEL[r.urgency],
       STATUS_LABEL[r.status],
     ];

@@ -5,7 +5,7 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { Pill, StatusPill, UrgencyTag } from "@/components/ui/StatusPill";
-import { relativeTime } from "@/lib/format";
+import { floorLabel, relativeTime } from "@/lib/format";
 import type { Status, Urgency } from "@/lib/status";
 
 export type RequestRowData = {
@@ -57,7 +57,7 @@ export function RequestRows({
                   {r.is_following ? <Pill tone="purple">ติดตาม</Pill> : null}
                 </div>
                 <p className="truncate text-[13px] text-muted">
-                  {r.building_name} · ชั้น {r.floor} · {r.room_name}
+                  {r.building_name} · {floorLabel(r.floor)} · {r.room_name}
                 </p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                   <StatusPill status={r.status} merged={!!r.merged_into_code} />

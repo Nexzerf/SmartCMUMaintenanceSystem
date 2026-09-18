@@ -10,6 +10,7 @@
  * Room floor: coded rooms follow CMU's convention — for a 4-digit number the 2nd digit is the floor
  * (RB5201 → floor 2, HB7801 → floor 8), for a 3-digit number the 1st digit is (CE201 → floor 2).
  * Named rooms without a code use the floor given in the list, otherwise floor 1.
+ * Floor 0 is a ground floor "G" below floor 1, negative floors are basements (-1 = "B1"); see floorLabel().
  *
  * Buildings from the map without a room list (library, dormitories, services) get generic areas
  * instead of invented room numbers; reporters add the exact spot in "จุดสังเกตเพิ่มเติม".
@@ -124,7 +125,8 @@ export const LOCATIONS: CampusDef[] = [
       {
         name: "คณะสังคมศาสตร์ อาคารปฏิบัติการ (อาคาร 04107)",
         rooms: [
-          ...onFloor(1, "ห้องประชุมย่อย Subaltern Room (ชั้นใต้ดิน)", "สโมสรนักศึกษาคณะสังคมศาสตร์"),
+          ...onFloor(-1, "ห้องประชุมย่อย (Subaltern Room)"),
+          ...onFloor(1, "สโมสรนักศึกษาคณะสังคมศาสตร์"),
           ...onFloor(2, "ห้องเรียน RCSD", "ศูนย์จีนศึกษา", "ห้องพักคณาจารย์", "ห้องปฏิบัติการคดีอาญา", "ห้องทดลองปฏิบัติการทางการพิสูจน์หลักฐาน", "ห้องโปลีกราฟ"),
           ...onFloor(3, "สมาคมนักศึกษาเก่าคณะสังคมศาสตร์", "ห้อง ITSC Corner", "หน่วยเทคโนโลยีสารสนเทศ", "ห้องประชุมศูนย์วิจัย"),
           ...onFloor(4, "ห้องประชุมคณะสังคมศาสตร์ (04-003)", "ศูนย์ศึกษาชาติพันธุ์และการพัฒนา", "ศูนย์ภูมิอากาศเพื่อการศึกษาด้านภูมิอากาศและสิ่งแวดล้อม (RCCES)"),
@@ -132,8 +134,59 @@ export const LOCATIONS: CampusDef[] = [
       },
       { name: "คณะสังคมศาสตร์ International Building", rooms: GENERIC_AREAS },
       { name: "คณะสังคมศาสตร์ โรงอาหาร (SOC Cafeteria)", rooms: GENERIC_AREAS },
-      { name: "ECB1 คณะเศรษฐศาสตร์", rooms: ["EC1101", "EC1102", "EC1201", "EC1202", "EC1301"] },
-      { name: "ECB2 คณะเศรษฐศาสตร์", rooms: ["EC2101", "EC2102", "EC2201", ...onFloor(1, "ห้องศาลาเศรษฐศาสตร์")] },
+      // Faculty of Economics: floor plans of buildings 1–3 supplied by the team (ecb1–ecb3.pdf).
+      {
+        name: "ECB1 คณะเศรษฐศาสตร์ อาคาร 1",
+        rooms: [
+          ...onFloor(0, "หน่วยพัฒนาคุณภาพนักศึกษา", "ชมรมและสโมสรนักศึกษา", "สมาคมศิษย์เก่าเศรษฐศาสตร์"),
+          "EC1101", "EC1102",
+          ...onFloor(1, "สำนักงานคณบดี", "สำนักงานคณะเศรษฐศาสตร์", "งานบริการการศึกษา", "ห้องศูนย์การวิเคราะห์เชิงปริมาณ", "ห้องประชุมการเรียนรู้ตลอดชีวิตอย่างผาสุก"),
+          "ECB1201", "ECB1202",
+          ...onFloor(2, "ห้องสัมมนา ชั้น 2", "ITSC Corner", "ศูนย์ความเป็นเลิศทางเศรษฐมิติ", "ศูนย์วิจัยเศรษฐศาสตร์โทรคมนาคม"),
+          ...seq("ECB", 1301, 1348), // faculty offices
+          ...seq("ECB", 1401, 1406),
+          ...onFloor(4, "หน่วยเทคโนโลยีสารสนเทศและหน่วยโสตทัศนศึกษา", "ศูนย์วิจัยและพัฒนาเศรษฐกิจชุมชน", "ศูนย์เศรษฐศาสตร์ทรัพยากรมนุษย์และสาธารณสุข"),
+        ],
+      },
+      {
+        name: "ECB2 คณะเศรษฐศาสตร์ อาคาร 2",
+        rooms: [
+          ...onFloor(-1, "ชมรมวิชาการ", "Study Room (ปริญญาเอก)", "Study Room (ปริญญาโท)", "Study Room (นานาชาติ)"),
+          "EC2101", "EC2102",
+          ...onFloor(1, "ลานกิจกรรม", "ห้องศาลาเศรษฐศาสตร์"),
+          "ECB2201", "ECB2301", "ECB2302", "ECB2401", "ECB2402", "ECB2501", "ECB2502", "ECB2601",
+          ...onFloor(6, "ECB2602 (ห้องประชุม)"),
+        ],
+      },
+      {
+        name: "ECB3 คณะเศรษฐศาสตร์ อาคาร 3",
+        rooms: [
+          ...onFloor(-1, "ห้องประชุมเรียนรู้ตลอดชีวิต ฤทธิ์ ศิริมาตย์"),
+          ...onFloor(1, "ห้องสมุดคณะเศรษฐศาสตร์", "ECB3102", "ECB3103 (Clean Air Zone)"),
+          "ECB3201", "ECB3202", "ECB3203",
+          // The plan lists "ECB 3203" and "ECB 3204" on floor 3 between 3302 and 3305: read as 3303 and 3304.
+          ...onFloor(3,
+            "ECB3301",
+            "ECB3302 ศูนย์วิจัยเศรษฐศาสตร์ทรัพยากรธรรมชาติและสิ่งแวดล้อม",
+            "ECB3303 ศูนย์วิจัยนวัตกรรมและการพัฒนาเศรษฐกิจอย่างยั่งยืน / ศูนย์วิจัยวิสาหกิจขนาดกลางและขนาดย่อมและการพัฒนาธุรกิจ / ศูนย์วิจัยเศรษฐกิจอาเซียน",
+            "ECB3304 สำนักงานศูนย์อาเซียนศึกษา",
+            "ECB3305 สำนักงานศูนย์อาเซียนศึกษา",
+            "ECB3306 ศูนย์วิจัยและพัฒนาวิสาหกิจขนาดกลางและขนาดย่อม",
+            "ECB3307 ศูนย์วิจัยและส่งเสริมเศรษฐกิจพอเพียง",
+            "ECB3308 Smart Class Room"),
+          ...onFloor(4,
+            "ECB3401 ศูนย์วิจัยเศรษฐศาสตร์โซ่อุปทาน",
+            "ECB3402 งานนโยบายและแผนและประกันคุณภาพ",
+            "ECB3403 เครือข่ายวิชาการเพื่อการพัฒนาที่ยั่งยืน มหาวิทยาลัยเชียงใหม่",
+            "ECB3404 ศูนย์ความเป็นเลิศเพื่อการวิจัยและนวัตกรรมเศรษฐกิจสร้างสรรค์",
+            "ECB3405 ศูนย์วิจัยเศรษฐศาสตร์ห่วงโซ่อุปทาน",
+            "ECB3406 ศูนย์เศรษฐศาสตร์เชิงปริมาณสมัยใหม่",
+            "ECB3407",
+            "ECB3408 ศูนย์ความเป็นเลิศเพื่อการวิจัยและนวัตกรรมเศรษฐกิจสร้างสรรค์",
+            "ECB3409 ห้องประชุมทางไกล",
+            "ECB3410 ห้องรับรอง"),
+        ],
+      },
       { name: "LB1 คณะนิติศาสตร์", rooms: ["LAW1101", "LAW1201", "LAW1202", "LAW2101", "LAW2201", ...onFloor(1, "ห้อง Moot Court")] },
       { name: "PSB1 คณะรัฐศาสตร์และรัฐประศาสนศาสตร์", rooms: ["POL1101", "POL1201", "POL2101", "POL2201", "POL3101", "POL3201"] },
       { name: "EB1 คณะศึกษาศาสตร์", rooms: ["EDU1101", "EDU1201"] },
@@ -304,7 +357,21 @@ export const LEGACY_BUILDINGS: Record<string, string> = {
   "ILC-A ห้องเรียน Active Learning (60–80 ที่นั่ง)": "TLIC ศูนย์นวัตกรรมการเรียนการสอน",
   "ILC-B ห้องเรียน Active Learning (40–50 ที่นั่ง)": "TLIC ศูนย์นวัตกรรมการเรียนการสอน",
   "ILC-C ห้องเรียน Active Learning (30–40 ที่นั่ง)": "TLIC ศูนย์นวัตกรรมการเรียนการสอน",
+  "ECB1 คณะเศรษฐศาสตร์": "ECB1 คณะเศรษฐศาสตร์ อาคาร 1",
+  "ECB2 คณะเศรษฐศาสตร์": "ECB2 คณะเศรษฐศาสตร์ อาคาร 2",
 };
+
+/**
+ * Rooms renamed in place (building = its current name). Requests stay on the same room row.
+ * Applied before rooms are added, so the new name is not created as a second room.
+ */
+export const LEGACY_ROOMS: { building: string; from: string; to: string }[] = [
+  { building: "ECB1 คณะเศรษฐศาสตร์ อาคาร 1", from: "EC1201", to: "ECB1201" },
+  { building: "ECB1 คณะเศรษฐศาสตร์ อาคาร 1", from: "EC1202", to: "ECB1202" },
+  { building: "ECB1 คณะเศรษฐศาสตร์ อาคาร 1", from: "EC1301", to: "ECB1301" },
+  { building: "ECB2 คณะเศรษฐศาสตร์ อาคาร 2", from: "EC2201", to: "ECB2201" },
+  { building: "คณะสังคมศาสตร์ อาคารปฏิบัติการ (อาคาร 04107)", from: "ห้องประชุมย่อย Subaltern Room (ชั้นใต้ดิน)", to: "ห้องประชุมย่อย (Subaltern Room)" },
+];
 
 export function roomName(r: RoomDef): string {
   return typeof r === "string" ? r : r.name;

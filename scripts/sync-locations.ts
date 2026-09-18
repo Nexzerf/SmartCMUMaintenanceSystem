@@ -13,7 +13,7 @@
  */
 import "./env";
 import postgres from "postgres";
-import { LEGACY_BUILDINGS, LOCATIONS, roomFloor, roomName } from "../db/locations";
+import { LEGACY_BUILDINGS, LEGACY_ROOMS, LOCATIONS, roomFloor, roomName } from "../db/locations";
 
 type Room = { id: number; name_th: string; floor: number };
 
@@ -105,6 +105,11 @@ async function main() {
             stats.buildingsAdded++;
           } else if (bRow.campus_id !== campusOf.get(b.name)) {
             await tx`update buildings set campus_id = ${campusOf.get(b.name)!} where id = ${bRow.id}`;
+          }
+          for (const rn of LEGACY_ROOMS.filter((x) => x.building === b.name)) {
+            const renamed = await tx`update rooms set name_th = ${rn.to} where building_id = ${bRow.id} and name_th = ${rn.from}
+              and not exists (select 1 from rooms where building_id = ${bRow.id} and name_th = ${rn.to}) returning id`;
+            stats.roomsUpdated += renamed.length;
           }
           const existing = await tx<Room[]>`select id, name_th, floor from rooms where building_id = ${bRow.id}`;
           const listed: Room[] = [];

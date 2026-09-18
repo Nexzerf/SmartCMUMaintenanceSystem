@@ -11,7 +11,7 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Sheet } from "@/components/ui/Sheet";
 import { Pill } from "@/components/ui/StatusPill";
 import { cn } from "@/lib/cn";
-import { formatPhone } from "@/lib/format";
+import { floorLabel, formatPhone } from "@/lib/format";
 import type { Catalog } from "@/lib/requests/queries";
 
 type Tech = { id: string; username: string; full_name: string; phone: string | null; is_active: boolean; skills: number[] };
@@ -199,7 +199,7 @@ export function SettingsView({ catalog, technicians }: { catalog: Catalog; techn
             <Column title="ห้อง" addLabel="เพิ่ม" onAdd={buildingId ? () => open({ kind: "room", building_id: buildingId, floor: "1", name_th: "" }) : undefined}>
               {buildingId ? (
                 rooms.length ? (
-                  rooms.map((r) => <Row key={r.id} label={r.name_th} detail={`ชั้น ${r.floor}`} onEdit={() => open({ kind: "room", id: r.id, building_id: r.building_id, floor: String(r.floor), name_th: r.name_th })} />)
+                  rooms.map((r) => <Row key={r.id} label={r.name_th} detail={floorLabel(r.floor)} onEdit={() => open({ kind: "room", id: r.id, building_id: r.building_id, floor: String(r.floor), name_th: r.name_th })} />)
                 ) : (
                   <li className="px-4 py-6 text-sm text-muted">ยังไม่มีห้องในอาคารนี้</li>
                 )
@@ -319,7 +319,8 @@ export function SettingsView({ catalog, technicians }: { catalog: Catalog; techn
                 {editor.kind === "room" ? (
                   <div>
                     <Label htmlFor="ed-floor">ชั้น</Label>
-                    <Input id="ed-floor" type="number" inputMode="numeric" value={editor.floor} onChange={(e) => patch({ floor: e.target.value })} />
+                    <Input id="ed-floor" type="number" inputMode="numeric" value={editor.floor} onChange={(e) => patch({ floor: e.target.value })} aria-describedby="ed-floor-hint" />
+                    <p id="ed-floor-hint" className="mt-1 text-[13px] text-muted">ใส่ 0 สำหรับชั้น G และ -1 สำหรับชั้นใต้ดิน B1</p>
                   </div>
                 ) : null}
                 <div>

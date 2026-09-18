@@ -7,7 +7,7 @@ import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { Select } from "@/components/ui/Field";
 import { StatusPill, UrgencyTag } from "@/components/ui/StatusPill";
 import { cn } from "@/lib/cn";
-import { formatDateTime, relativeTime } from "@/lib/format";
+import { floorLabel, formatDateTime, relativeTime } from "@/lib/format";
 import { ADMIN_LIST_LIMIT } from "@/lib/limits";
 import type { AdminRequestRow, Catalog } from "@/lib/requests/queries";
 import type { serialize } from "@/lib/serialize";
@@ -221,7 +221,7 @@ export function RequestTable({ rows, catalog, filters, openCode }: { rows: Row[]
                   <td className="px-3 py-3">
                     <span className="block whitespace-nowrap">{r.building_name}</span>
                     <span className="block whitespace-nowrap text-[13px] text-muted">
-                      ชั้น {r.floor} · {r.room_name}
+                      {floorLabel(r.floor)} · {r.room_name}
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">{r.reporter_name}</td>

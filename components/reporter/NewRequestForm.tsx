@@ -14,7 +14,7 @@ import { GroupedList, GroupedRow } from "@/components/ui/GroupedList";
 import { Sheet } from "@/components/ui/Sheet";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { cn } from "@/lib/cn";
-import { relativeTime } from "@/lib/format";
+import { floorLabel, relativeTime } from "@/lib/format";
 import type { Catalog } from "@/lib/requests/queries";
 import { URGENCY_HINT, URGENCY_LABEL, type Urgency } from "@/lib/status";
 import { SuccessCheck } from "./SuccessCheck";
@@ -274,7 +274,7 @@ export function NewRequestForm({ catalog, prefill }: { catalog: Catalog; prefill
                   {draft.floor != null ? (
                     <>
                       <ChevronRight size={14} className="shrink-0 text-muted" aria-hidden />
-                      <Crumb active>ชั้น {draft.floor}</Crumb>
+                      <Crumb active>{floorLabel(draft.floor)}</Crumb>
                     </>
                   ) : null}
                 </nav>
@@ -306,7 +306,7 @@ export function NewRequestForm({ catalog, prefill }: { catalog: Catalog; prefill
                     ) : draft.floor == null ? (
                       <GroupedList title="ชั้น">
                         {floors.map((f) => (
-                          <GroupedRow key={f} label={`ชั้น ${f}`} chevron onClick={() => setDraft((d) => ({ ...d, floor: f, roomId: null }))} />
+                          <GroupedRow key={f} label={floorLabel(f)} chevron onClick={() => setDraft((d) => ({ ...d, floor: f, roomId: null }))} />
                         ))}
                       </GroupedList>
                     ) : (
@@ -393,7 +393,7 @@ export function NewRequestForm({ catalog, prefill }: { catalog: Catalog; prefill
                     <MapPin size={18} className="mt-0.5 shrink-0 text-brand" aria-hidden />
                     <div>
                       <p className="font-semibold">
-                        {building?.name_th} · ชั้น {room?.floor} · {room?.name_th}
+                        {building?.name_th} · {room ? floorLabel(room.floor) : ""} · {room?.name_th}
                       </p>
                       <p className="text-sm text-muted">{campus?.name_th}</p>
                       {draft.landmark ? <p className="mt-1 text-sm">จุดสังเกต: {draft.landmark}</p> : null}
@@ -497,7 +497,7 @@ export function NewRequestForm({ catalog, prefill }: { catalog: Catalog; prefill
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">{duplicate.category_name}</p>
                 <p className="truncate text-[13px] text-muted">
-                  {duplicate.building_name} · ชั้น {duplicate.floor} · {duplicate.room_name}
+                  {duplicate.building_name} · {floorLabel(duplicate.floor)} · {duplicate.room_name}
                 </p>
               </div>
             </div>

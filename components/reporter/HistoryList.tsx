@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { RequestRows, type RequestRowData } from "@/components/request/RequestRow";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { CANCELLED_STATUSES, DONE_STATUSES, type Status } from "@/lib/status";
+import { floorLabel } from "@/lib/format";
 
 type Item = RequestRowData & { category_id: number; room_id: number; campus_name: string };
 type Filter = "all" | "active" | "done" | "cancelled";
@@ -31,7 +32,7 @@ export function HistoryList({ items }: { items: Item[] }) {
     return items.filter((i) => {
       if (filter !== "all" && bucket(i.status, !!i.merged_into_code) !== filter) return false;
       if (!term) return true;
-      return [i.code, i.building_name, i.room_name, `ชั้น ${i.floor}`, i.campus_name, i.category_name].some((f) => f.toLowerCase().includes(term));
+      return [i.code, i.building_name, i.room_name, floorLabel(i.floor), i.campus_name, i.category_name].some((f) => f.toLowerCase().includes(term));
     });
   }, [items, filter, q]);
 

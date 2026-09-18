@@ -38,7 +38,7 @@ export function firstName(fullName: string | null | undefined) {
 }
 
 export function locationLabel(r: { building_name?: string | null; floor?: number | null; room_name?: string | null }) {
-  return [r.building_name, r.floor != null ? `ชั้น ${r.floor}` : null, r.room_name].filter(Boolean).join(" · ");
+  return [r.building_name, r.floor != null ? floorLabel(r.floor) : null, r.room_name].filter(Boolean).join(" · ");
 }
 
 export function formatPhone(phone: string | null | undefined) {
@@ -47,4 +47,11 @@ export function formatPhone(phone: string | null | undefined) {
   if (p.length === 10) return `${p.slice(0, 3)}-${p.slice(3, 6)}-${p.slice(6)}`;
   if (p.length === 9) return `${p.slice(0, 2)}-${p.slice(2, 5)}-${p.slice(5)}`;
   return phone;
+}
+
+/** "ชั้น 3", "ชั้น G" for floor 0, "ชั้น B1" for floor -1. */
+export function floorLabel(floor: number) {
+  if (floor === 0) return "ชั้น G";
+  if (floor < 0) return `ชั้น B${-floor}`;
+  return `ชั้น ${floor}`;
 }

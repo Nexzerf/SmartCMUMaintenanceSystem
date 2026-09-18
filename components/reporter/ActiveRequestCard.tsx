@@ -5,7 +5,7 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { StatusPill } from "@/components/ui/StatusPill";
-import { relativeTime } from "@/lib/format";
+import { floorLabel, relativeTime } from "@/lib/format";
 import { MAIN_FLOW, STATUS_TONE, statusProgress, type Status } from "@/lib/status";
 
 const BAR: Record<string, string> = {
@@ -31,7 +31,7 @@ export function ActiveRequestCard({
         <div className="min-w-0 flex-1">
           <p className="truncate text-[16px] font-bold">{request.category_name}</p>
           <p className="truncate text-[13px] text-muted">
-            {request.building_name} · ชั้น {request.floor} · {request.room_name}
+            {request.building_name} · {floorLabel(request.floor)} · {request.room_name}
           </p>
         </div>
         <ChevronRight size={18} className="text-[#a0a0a6]" aria-hidden />
