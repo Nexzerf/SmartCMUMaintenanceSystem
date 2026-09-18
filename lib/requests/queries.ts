@@ -1,5 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { facultyOf } from "@/db/locations";
 import { runQueries, sql } from "@/lib/db";
 import { CATALOG_TAG } from "@/lib/cache-tags";
 import { ADMIN_LIST_LIMIT } from "@/lib/limits";
@@ -219,11 +220,16 @@ async function loadCatalog(includeInactive: boolean): Promise<Catalog> {
       }),
     () => sql<Catalog["rooms"]>`select id, building_id, floor, name_th from rooms order by floor, name_th`,
   ]);
-  return { categories, campuses, buildings, rooms };
+  // A building without a stored faculty (database not synced yet, or added by an admin without one)
+  // is grouped by the same rules as db/locations.ts, so the faculty step never collapses into one list.
+  const grouped = buildings.map((b) => ({ ...b, faculty_th: b.faculty_th || facultyOf(b.name_th) }));
+  return { categories, campuses, buildings: grouped, rooms };
 }
 
 /** Master data changes rarely, so the reporter form does not pay for four queries on every load. */
-const cachedCatalog = unstable_cache(() => loadCatalog(false), ["catalog-active"], { tags: [CATALOG_TAG], revalidate: 600 });
+// The key carries a version: Vercel's data cache survives deployments, and entries cached before
+// buildings had a faculty would otherwise be served for up to 10 more minutes.
+const cachedCatalog = unstable_cache(() => loadCatalog(false), ["catalog-active-v2"], { tags: [CATALOG_TAG], revalidate: 600 });
 
 export async function getCatalog(includeInactive = false): Promise<Catalog> {
   return includeInactive ? loadCatalog(true) : cachedCatalog();
