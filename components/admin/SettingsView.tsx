@@ -36,7 +36,8 @@ function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: 
         onClick={() => onChange(!checked)}
         className={cn("relative h-7 w-12 shrink-0 rounded-full transition-colors", checked ? "bg-green-ink" : "bg-fill-strong")}
       >
-        <span className={cn("absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform", checked ? "translate-x-[22px]" : "translate-x-0.5")} />
+        {/* left-0 anchors the knob: without it the absolute span starts at the button's centered content box. */}
+        <span className={cn("absolute left-0 top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform", checked ? "translate-x-[22px]" : "translate-x-0.5")} />
       </button>
     </label>
   );

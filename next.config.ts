@@ -13,7 +13,8 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["pdfkit", "exceljs"],
   // The PDF export reads font files at runtime; make sure serverless bundles (Netlify/Vercel) include them.
   outputFileTracingIncludes: {
-    "/api/admin/export/pdf": ["./node_modules/@fontsource/ibm-plex-sans-thai/files/*-normal.woff", "./node_modules/pdfkit/js/data/**"],
+    // pdfkit loads js/standard-fonts/*.cjs and js/data/* with dynamic requires that tracing cannot see.
+    "/api/admin/export/pdf": ["./node_modules/@fontsource/ibm-plex-sans-thai/files/*-normal.woff", "./node_modules/pdfkit/js/**/*"],
   },
   poweredByHeader: false,
   // Pin tracing to this project (a lockfile in a parent folder confuses auto-detection).
