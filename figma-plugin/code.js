@@ -904,7 +904,7 @@ function sidebar(parent, role, active) {
 
 // Mobile admin navigation: a top bar (the web app's AdminSidebar collapses to this under 768 px).
 function adminTopBar(f, active) {
-  const bar = box({ name: "Admin top bar", dir: "h", gap: 4, p: [8, 12], fill: "surface", cross: "CENTER", clip: true });
+  const bar = box({ name: "Admin top bar", dir: "h", gap: 4, p: [8, 12], h: 64, fill: "surface", cross: "CENTER", clip: true });
   bar.strokes = paint("line");
   bar.strokeBottomWeight = 1;
   bar.strokeTopWeight = 0;
@@ -913,13 +913,17 @@ function adminTopBar(f, active) {
   put(f, bar, { fillW: true });
   brandMark(bar, 36);
   spacer4(bar);
+  // Three equal icon-over-label buttons with short labels, so all fit at 360 px (same as the web app).
+  const SHORT = { dash: "แดชบอร์ด", requests: "คำร้อง", settings: "ข้อมูล" };
   NAV.admin.items.forEach(function (it) {
     const on = it[0] === active;
-    const item = box({ name: "Nav/" + it[2], dir: "h", gap: 6, p: [0, 10], h: 44, r: 12, cross: "CENTER", fill: on ? "brandSoft" : null });
-    icon(item, it[1], 18, on ? "brand" : "ink");
-    text(item, it[2], { size: 14, w: "sb", c: on ? "brand" : "ink" });
-    if (it[4]) navBadge(item, it[4]);
-    bar.appendChild(item);
+    const item = box({ name: "Nav/" + it[2], gap: 2, p: [4, 4], h: 48, r: 12, main: "CENTER", cross: "CENTER", fill: on ? "brandSoft" : null });
+    const top = box({ name: "Icon", dir: "h", gap: 2, cross: "CENTER" });
+    icon(top, it[1], 18, on ? "brand" : "ink");
+    if (it[4]) navBadge(top, it[4]);
+    item.appendChild(top);
+    text(item, SHORT[it[0]] || it[2], { size: 12, w: "sb", c: on ? "brand" : "ink" });
+    put(bar, item, { grow: true });
     link(item, it[3]);
   });
   const out = box({ name: "Logout", main: "CENTER", cross: "CENTER", w: 44, h: 44, r: 12 });

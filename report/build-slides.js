@@ -204,6 +204,7 @@ function bulletsText(s, items, x, y, w, h, size = 17) {
     ["เว็บช้า", "ย้าย Vercel สิงคโปร์ เพิ่มดัชนี ลดรอบคิวรี"],
     ["ข้อมูลอาคารไม่ตรงจริง", "87 อาคาร 457 ห้อง · ILC-A/B/C อยู่ใน TLIC"],
     ["ปุ่มสลับเพี้ยน / PDF ส่งออกไม่ได้", "แก้ตำแหน่งปุ่ม รวมไฟล์ฟอนต์ pdfkit ตอน deploy"],
+    ["ตรวจความปลอดภัยและ UI ทุกหน้าก่อนส่ง", "จำกัดรหัสผิด ซ่อนชื่อผู้แจ้ง · แก้เมนูมือถือ เพิ่มค้นหาอาคาร"],
   ];
   const tbl = [
     [
@@ -212,7 +213,7 @@ function bulletsText(s, items, x, y, w, h, size = 17) {
     ],
     ...rows.map((r, i) => r.map((t) => ({ text: t, options: { fill: { color: i % 2 ? C.white : C.bg } } }))),
   ];
-  s.addTable(tbl, { x: 0.6, y: 1.7, w: 12.1, colW: [5.2, 6.9], fontFace: FONT, fontSize: 15, color: C.ink, border: { type: "solid", color: C.line, pt: 0.75 }, rowH: 0.62, valign: "middle" });
+  s.addTable(tbl, { x: 0.6, y: 1.7, w: 12.1, colW: [5.2, 6.9], fontFace: FONT, fontSize: 14, color: C.ink, border: { type: "solid", color: C.line, pt: 0.75 }, rowH: 0.56, valign: "middle" });
 }
 
 // 9 ─ Use case
