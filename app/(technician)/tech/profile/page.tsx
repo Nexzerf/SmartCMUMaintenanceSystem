@@ -25,7 +25,7 @@ export default async function TechProfilePage() {
   ]);
 
   return (
-    <main className="lg:max-w-[820px]">
+    <main className="lg:mx-auto lg:max-w-[820px]">
       <PageHeader title={`ช่าง${user.full_name}`} subtitle={`${user.username}@cmu.ac.th`} large className="pt-6" />
       <div className="space-y-6 px-5 pt-5">
         <div className="grid grid-cols-3 gap-2">

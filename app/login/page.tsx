@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bell, Camera, MapPin } from "lucide-react";
+import { BrandWordmark } from "@/components/ui/Brand";
 import { LoginForm } from "./LoginForm";
 
 export const metadata: Metadata = { title: "เข้าสู่ระบบ" };
@@ -16,12 +17,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <main className="min-h-dvh lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       {/* Desktop-only brand panel */}
       <section className="hidden flex-col justify-center gap-14 bg-brand px-14 py-12 text-white lg:flex">
-        <div className="flex items-center gap-3">
-          <Logo inverted />
-          <div>
-            <p className="text-[17px] font-bold leading-tight">แจ้งซ่อม มช.</p>
-            <p className="text-sm text-white/80">มหาวิทยาลัยเชียงใหม่</p>
-          </div>
+        <div>
+          <BrandWordmark onBrand height={56} />
+          <p className="mt-3 text-sm text-white/80">ระบบแจ้งซ่อมอาคารและอุปกรณ์ มหาวิทยาลัยเชียงใหม่</p>
         </div>
         <div className="max-w-[440px]">
           <h2 className="text-[36px] font-bold leading-tight tracking-tight">เจออะไรเสียในมหาวิทยาลัย แจ้งได้ในไม่ถึง 3 นาที</h2>
@@ -43,12 +41,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
       <div className="flex flex-col items-center px-5 py-10 sm:justify-center lg:bg-page">
         <div className="w-full max-w-[400px]">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <Logo />
-            <div>
-              <p className="text-[15px] font-bold leading-tight">แจ้งซ่อม มช.</p>
-              <p className="text-[13px] text-muted">มหาวิทยาลัยเชียงใหม่</p>
-            </div>
+          <div className="mb-8 lg:hidden">
+            <BrandWordmark height={44} />
+            <p className="mt-2 text-[13px] text-muted">ระบบแจ้งซ่อม มหาวิทยาลัยเชียงใหม่</p>
           </div>
           <h1 className="text-[28px] font-bold leading-tight tracking-tight">มีอะไรเสีย บอกเราได้เลย</h1>
           <p className="mt-2 text-[15px] text-muted">เข้าสู่ระบบด้วย CMU Account เพื่อแจ้งซ่อมและติดตามงาน</p>
@@ -56,15 +51,5 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </div>
       </div>
     </main>
-  );
-}
-
-function Logo({ inverted }: { inverted?: boolean }) {
-  return (
-    <span className={`inline-flex h-11 w-11 items-center justify-center rounded-[12px] ${inverted ? "bg-white text-brand" : "bg-brand text-white"}`} aria-hidden>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3.6 17.4a1.4 1.4 0 0 0 2 2l5.7-5.7a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2 2.5-2.5z" />
-      </svg>
-    </span>
   );
 }

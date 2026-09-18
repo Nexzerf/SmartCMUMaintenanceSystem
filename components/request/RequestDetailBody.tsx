@@ -83,11 +83,12 @@ export function RequestDetailBody({ r, showReporter }: { r: RequestDetailView; s
 
       {showReporter ? (
         <Section title="ผู้แจ้ง">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-fill text-muted" aria-hidden>
+          {/* Wraps the call button under the name when the column is narrow, instead of squeezing the name. */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-fill text-muted" aria-hidden>
               <UserRound size={20} />
             </span>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-[150px] flex-1">
               <p className="font-semibold">{r.reporter_name}</p>
               <p className="truncate text-[13px] text-muted">{r.reporter_faculty}</p>
             </div>

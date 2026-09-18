@@ -1,5 +1,5 @@
 @startuml usecase
-' แผนภาพยูสเคส ระบบแจ้งซ่อม มช.
+' แผนภาพยูสเคส ระบบ FastFix CMU
 !pragma layout smetana
 !include _style.iuml
 left to right direction
@@ -15,7 +15,7 @@ actor "ตัวตั้งเวลาของระบบ" as Timer
 Student --|> Reporter
 Staff --|> Reporter
 
-rectangle "ระบบแจ้งซ่อม มช." {
+rectangle "FastFix CMU" {
   usecase "UC01 เข้าสู่ระบบ" as UC01
   usecase "UC02 ตั้งค่าโปรไฟล์และยินยอม PDPA" as UC02
   usecase "UC03 แจ้งซ่อม" as UC03

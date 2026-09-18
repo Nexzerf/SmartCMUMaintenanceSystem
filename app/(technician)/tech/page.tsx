@@ -17,7 +17,7 @@ export default async function TechJobsPage() {
   const newCount = jobs.filter((j) => j.status === "assigned").length;
 
   return (
-    <main className="lg:max-w-[900px]">
+    <main className="lg:mx-auto lg:max-w-[900px]">
       <header className="flex items-center gap-3 px-5 pt-6">
         <div className="min-w-0 flex-1">
           <p className="text-[15px] text-muted">ช่าง{firstName(user.full_name)}</p>

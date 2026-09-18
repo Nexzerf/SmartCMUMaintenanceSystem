@@ -15,7 +15,7 @@ const H = 7.5;
 
 const pptx = new PptxGenJS();
 pptx.layout = "LAYOUT_WIDE";
-pptx.title = "ระบบแจ้งซ่อมอัจฉริยะ มหาวิทยาลัยเชียงใหม่";
+pptx.title = "FastFix CMU ระบบแจ้งซ่อมอัจฉริยะ มหาวิทยาลัยเชียงใหม่";
 pptx.theme = { headFontFace: FONT, bodyFontFace: FONT };
 
 function pngSize(file) {
@@ -57,8 +57,9 @@ function bulletsText(s, items, x, y, w, h, size = 17) {
   const s = pptx.addSlide();
   s.background = { color: C.brand };
   s.addText("954244 การวิเคราะห์และออกแบบระบบสำหรับการจัดการสมัยใหม่", { x: 0.8, y: 0.8, w: 11.5, h: 0.4, fontFace: FONT, fontSize: 15, color: "E6DAF0" });
-  s.addText("ระบบแจ้งซ่อมอัจฉริยะ\nมหาวิทยาลัยเชียงใหม่", { x: 0.8, y: 2.0, w: 11.5, h: 2.2, fontFace: FONT, fontSize: 48, bold: true, color: C.white, lineSpacingMultiple: 1.05 });
-  s.addText("Smart CMU Maintenance Request System", { x: 0.8, y: 4.25, w: 11.5, h: 0.5, fontFace: FONT, fontSize: 22, color: "E6DAF0" });
+  s.addImage({ path: path.join(__dirname, "..", "public", "brand", "fastfix-wordmark-white.png"), x: 0.8, y: 1.7, w: 6.2, h: 1.2 });
+  s.addText("ระบบแจ้งซ่อมอัจฉริยะ มหาวิทยาลัยเชียงใหม่", { x: 0.8, y: 3.15, w: 11.5, h: 0.9, fontFace: FONT, fontSize: 34, bold: true, color: C.white });
+  s.addText("Smart CMU Maintenance Request System", { x: 0.8, y: 4.1, w: 11.5, h: 0.5, fontFace: FONT, fontSize: 20, color: "E6DAF0" });
   s.addText("แจ้งซ่อม · ติดตามสถานะ · ช่างอัปเดตงาน · แดชบอร์ดผู้ดูแลระบบ", { x: 0.8, y: 5.3, w: 11.5, h: 0.4, fontFace: FONT, fontSize: 16, color: C.white });
   s.addText(URL, { x: 0.8, y: 6.4, w: 11.5, h: 0.4, fontFace: FONT, fontSize: 14, color: "E6DAF0" });
 }

@@ -17,7 +17,7 @@ function reportTitle(data: DashboardData) {
 
 export async function buildXlsx(data: DashboardData): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Smart CMU Maintenance";
+  wb.creator = "FastFix CMU";
   wb.created = new Date();
 
   const summary = wb.addWorksheet("สรุป");
@@ -145,7 +145,7 @@ function drawText(doc: PDFKit.PDFDocument, text: string, x: number, y: number, w
 }
 
 export async function buildPdf(data: DashboardData): Promise<Buffer> {
-  const doc = new PDFDocument({ size: "A4", margin: 40, bufferPages: true, info: { Title: reportTitle(data), Author: "Smart CMU Maintenance" } });
+  const doc = new PDFDocument({ size: "A4", margin: 40, bufferPages: true, info: { Title: reportTitle(data), Author: "FastFix CMU" } });
   for (const [name, file] of Object.entries(fonts)) doc.registerFont(name, fs.readFileSync(file));
   const chunks: Buffer[] = [];
   doc.on("data", (c: Buffer) => chunks.push(c));
@@ -162,7 +162,7 @@ export async function buildPdf(data: DashboardData): Promise<Buffer> {
   };
 
   doc.rect(0, 0, doc.page.width, 6).fill("#5B2C83");
-  y += drawText(doc, "Smart CMU Maintenance · ระบบแจ้งซ่อม มหาวิทยาลัยเชียงใหม่", left, y, width, { size: 9, color: "#6B6B6B" });
+  y += drawText(doc, "FastFix CMU · ระบบแจ้งซ่อม มหาวิทยาลัยเชียงใหม่", left, y, width, { size: 9, color: "#6B6B6B" });
   y += drawText(doc, reportTitle(data), left, y + 2, width, { size: 16, bold: true }) + 8;
 
   // KPI tiles

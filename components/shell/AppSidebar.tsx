@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useTransition } from "react";
 import { logout } from "@/app/actions/auth";
 import { cn } from "@/lib/cn";
+import { BrandIcon } from "@/components/ui/Brand";
 
 type Item = { href: string; label: string; icon: typeof House; badge?: number; match: (p: string) => boolean };
 
@@ -31,13 +32,9 @@ export function AppSidebar({ role, name, subtitle, unread }: { role: "reporter" 
   return (
     <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col bg-white px-3 py-5 lg:flex">
       <div className="mb-6 flex items-center gap-2.5 px-2">
-        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-brand text-white" aria-hidden>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3.6 17.4a1.4 1.4 0 0 0 2 2l5.7-5.7a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2 2.5-2.5z" />
-          </svg>
-        </span>
+        <BrandIcon size={40} />
         <div className="min-w-0">
-          <p className="text-[15px] font-bold leading-tight">แจ้งซ่อม มช.</p>
+          <p className="text-[15px] font-bold leading-tight">FastFix CMU</p>
           <p className="truncate text-xs text-muted">{subtitle}</p>
         </div>
       </div>

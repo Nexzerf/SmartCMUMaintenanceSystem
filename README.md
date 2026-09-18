@@ -1,4 +1,4 @@
-# Smart CMU Maintenance Request System
+# FastFix CMU — Smart CMU Maintenance Request System
 
 Interactive prototype for **954244 System Analysis and Design for Modern Management** (Chiang Mai University).
 Reporters submit and track maintenance requests, technicians work assigned jobs, and admins manage requests and see analytics.

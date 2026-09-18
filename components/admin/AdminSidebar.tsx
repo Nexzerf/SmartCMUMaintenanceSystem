@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTransition } from "react";
 import { logout } from "@/app/actions/auth";
+import { BrandIcon } from "@/components/ui/Brand";
 import { cn } from "@/lib/cn";
 
 const NAV: { href: string; label: string; short?: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
@@ -21,13 +22,9 @@ export function AdminSidebar({ pending, name }: { pending: number; name: string 
     <aside className="sticky top-0 z-30 bg-white md:h-dvh md:w-[76px] md:shrink-0 lg:w-[240px]">
       <div className="flex h-full items-center gap-1 px-3 py-2 md:flex-col md:items-stretch md:px-3 md:py-5">
         <div className="mr-2 flex items-center gap-2.5 md:mb-6 md:mr-0 md:justify-center md:px-1 lg:justify-start lg:px-2">
-          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-brand text-white" aria-hidden>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3.6 17.4a1.4 1.4 0 0 0 2 2l5.7-5.7a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2 2.5-2.5z" />
-            </svg>
-          </span>
+          <BrandIcon size={36} />
           <div className="hidden min-w-0 lg:block">
-            <p className="text-[15px] font-bold leading-tight">แจ้งซ่อม มช.</p>
+            <p className="text-[15px] font-bold leading-tight">FastFix CMU</p>
             <p className="truncate text-xs text-muted">{name}</p>
           </div>
         </div>

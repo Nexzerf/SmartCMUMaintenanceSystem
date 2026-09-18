@@ -13,7 +13,7 @@ export default async function HistoryPage() {
   await runAutoClose();
   const requests = await listReporterRequests(user.id);
   return (
-    <main className="lg:max-w-[820px]">
+    <main className="lg:mx-auto lg:max-w-[820px]">
       <PageHeader title="ประวัติ" subtitle="คำร้องที่คุณแจ้งและติดตาม" large className="pt-6" />
       <HistoryList
         items={serialize(requests).map((r) => ({

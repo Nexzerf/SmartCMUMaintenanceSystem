@@ -11,8 +11,9 @@ const plex = IBM_Plex_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: { default: "แจ้งซ่อม มช.", template: "%s · แจ้งซ่อม มช." },
-  description: "ระบบแจ้งซ่อมอาคารและอุปกรณ์ มหาวิทยาลัยเชียงใหม่",
+  title: { default: "FastFix CMU", template: "%s · FastFix CMU" },
+  applicationName: "FastFix CMU",
+  description: "FastFix CMU ระบบแจ้งซ่อมอาคารและอุปกรณ์ มหาวิทยาลัยเชียงใหม่",
 };
 
 export const viewport: Viewport = {

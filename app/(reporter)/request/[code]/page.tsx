@@ -30,13 +30,13 @@ export default async function TrackRequestPage({ params }: { params: Promise<{ c
   return (
     <main>
       <PageHeader title="ติดตามสถานะ" backHref="/history" backLabel="ประวัติ" right={<NotificationBell unread={unread} requestBase="/request" />} />
-      {/* Phones stack everything; desktop puts actions and the timeline in a sticky right column. */}
-      <div className="space-y-5 px-5 pt-4 lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-6 lg:space-y-0">
-        <div className="lg:col-start-1 lg:row-start-1">
+      {/* Phones and tablets stack everything; from 1280 px actions and the timeline sit in a sticky right column. */}
+      <div className="space-y-5 px-5 pt-4 xl:grid xl:grid-cols-[minmax(0,1fr)_400px] xl:grid-rows-[auto_1fr] xl:items-start xl:gap-6 xl:space-y-0">
+        <div className="xl:col-start-1 xl:row-start-1">
           <RequestHeader r={r} />
         </div>
 
-        <aside className="space-y-5 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <aside className="space-y-5 xl:sticky xl:top-6 xl:col-start-2 xl:row-span-2 xl:row-start-1">
           <RequestActions
             requestId={r.id}
             code={r.code}
@@ -58,7 +58,7 @@ export default async function TrackRequestPage({ params }: { params: Promise<{ c
           </section>
         </aside>
 
-        <div className="lg:col-start-1 lg:row-start-2">
+        <div className="xl:col-start-1 xl:row-start-2">
           <RequestDetailBody r={r} />
         </div>
       </div>

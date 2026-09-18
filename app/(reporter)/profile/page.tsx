@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "โปรไฟล์" };
 export default async function ProfilePage() {
   const user = await requirePageUser("reporter");
   return (
-    <main className="lg:max-w-[820px]">
+    <main className="lg:mx-auto lg:max-w-[820px]">
       <PageHeader title="โปรไฟล์" subtitle={`${user.username}@cmu.ac.th`} large className="pt-6" />
       <div className="space-y-6 px-5 pt-5">
         <ProfileForm mode="edit" initial={{ full_name: user.full_name, user_type: user.user_type, faculty: user.faculty, phone: user.phone }} />
