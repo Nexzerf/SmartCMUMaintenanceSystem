@@ -240,7 +240,7 @@ async function main() {
   const CAMT = "CAMT วิทยาลัยศิลปะ สื่อ และเทคโนโลยี";
   const camt301 = rooms.find((r) => r.buildingName === CAMT && r.name === "CAMT301")!;
   // Demo requests cluster in lecture buildings, CAMT and dormitories, like real traffic would.
-  const classrooms = rooms.filter((r) => /^(RB|HB|CAMT|SCB|ENG|BAB|ILC)/.test(r.buildingName));
+  const classrooms = rooms.filter((r) => /^(RB|HB|CAMT|SCB|ENG|BAB|TLIC)/.test(r.buildingName));
   const weightedRooms = [...classrooms, ...classrooms, ...rooms.filter((r) => r.buildingName === CAMT), ...rooms.filter((r) => /^หอพัก/.test(r.buildingName)).slice(0, 20), ...rooms];
 
   const counters = new Map<string, number>();

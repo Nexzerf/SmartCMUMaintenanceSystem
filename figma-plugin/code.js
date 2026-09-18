@@ -1124,7 +1124,7 @@ const LOC = CAMT + " · ชั้น 3 · CAMT301";
 const LOC_RB5 = "RB5 อาคารเรียนรวม 5 · ชั้น 2 · RB5202";
 const LOC_RB5_1 = "RB5 อาคารเรียนรวม 5 · ชั้น 1 · RB5103";
 const LOC_LIB = "สำนักหอสมุด (Main Library) · ชั้น 1 · ห้องน้ำ";
-const LOC_ILC = "ILC-A ห้องเรียน Active Learning · ชั้น 2 · ILC-A204";
+const LOC_ILC = "TLIC ศูนย์นวัตกรรมการเรียนการสอน · ชั้น 2 · ILC-A204";
 const LOC_HB7 = "HB7 คณะมนุษยศาสตร์ (8 ชั้น) · ชั้น 4 · HB7402";
 const LOC_DORM = "หอพักนักศึกษาหญิง 3 · ชั้น 1 · ห้องน้ำรวม";
 const DESC = "แอร์เปิดแล้วไม่เย็น มีน้ำหยดลงโต๊ะแถวที่ 3 เริ่มเป็นตั้งแต่เมื่อวาน";
@@ -2027,7 +2027,7 @@ function A01() {
 
   const r2 = chartRow(m);
   chartCard(r2, "5 อาคารที่แจ้งมากที่สุด", function (c, w) {
-    hBars(c, [["CAMT", 12], ["RB5 อาคารเรียนรวม 5", 9], ["HB7 คณะมนุษยศาสตร์", 6], ["หอพักนักศึกษาหญิง 3", 5], ["ILC-A", 4]], w, "c1");
+    hBars(c, [["CAMT", 12], ["RB5 อาคารเรียนรวม 5", 9], ["HB7 คณะมนุษยศาสตร์", 6], ["หอพักนักศึกษาหญิง 3", 5], ["TLIC (ILC)", 4]], w, "c1");
   });
   chartCard(r2, "แยกตามประเภทปัญหา", function (c, w) {
     svgNode(c, columnsSvg(w, 160, [[9], [7], [11], [6], [4], [5], [1]], ["c1"]));
@@ -2073,7 +2073,7 @@ const TABLE_ROWS = [
   ["MR-2609-0042", "AirVent", "CAMT · ชั้น 3 · CAMT301", "อนันต์ ศรีวงศ์", "normal", "pending", "—", "10 นาที"],
   ["MR-2609-0041", "Zap", "RB5 · ชั้น 1 · RB5103", "ศิริพร คำแสน", "urgent", "assigned", "สมศักดิ์", "35 นาที"],
   ["MR-2609-0039", "Droplets", "RB5 · ชั้น 2 · RB5202", "ณัฐวุฒิ ปัญญาดี", "normal", "need_info", "—", "1 วัน"],
-  ["MR-2609-0035", "Monitor", "ILC-A · ชั้น 2 · ILC-A204", "กมลชนก อินทร์แก้ว", "low", "in_progress", "พจน์ณิชา", "2 วัน"],
+  ["MR-2609-0035", "Monitor", "TLIC · ชั้น 2 · ILC-A204", "กมลชนก อินทร์แก้ว", "low", "in_progress", "พจน์ณิชา", "2 วัน"],
   ["MR-2609-0033", "Armchair", "BAB1 · ชั้น 3 · BAB1302", "ภูริภัทร สายสุวรรณ", "normal", "waiting_parts", "วิชัย", "2 วัน"],
   ["MR-2609-0030", "Droplets", "หอพักหญิง 3 · ห้องน้ำรวม", "ภานิชา ศรีกระจ่าง", "urgent", "in_progress", "วิชัย", "3 วัน"],
   ["MR-2609-0028", "AirVent", "HB7 · ชั้น 4 · HB7402", "สุภาวิกา นันทสุวรรณ", "normal", "completed", "สมศักดิ์", "4 วัน"],
@@ -2344,12 +2344,12 @@ function A04b() {
     const row = box({ name: "Columns", dir: isD() ? "h" : "v", gap: 16, cross: "MIN" });
     put(m, row, { fillW: true });
     const c1 = columnCard(row, "วิทยาเขต (3)", "เพิ่ม");
-    settingRow(c1, { label: "วิทยาเขตสวนสัก", detail: "74 อาคาร", selected: true, chevron: true });
+    settingRow(c1, { label: "วิทยาเขตสวนสัก", detail: "71 อาคาร", selected: true, chevron: true });
     settingRow(c1, { label: "วิทยาเขตสวนดอก", detail: "11 อาคาร", chevron: true });
     settingRow(c1, { label: "วิทยาเขตแม่เหียะ", detail: "5 อาคาร", chevron: true });
     spacer(c1, 8);
     const c2 = columnCard(row, "อาคาร", "เพิ่ม");
-    ["RB1 อาคารเรียนรวม 1 (ทรงกลม)", "RB5 อาคารเรียนรวม 5", "HB7 คณะมนุษยศาสตร์ (8 ชั้น)", CAMT, "ILC-A ห้องเรียน Active Learning", "สำนักหอสมุด (Main Library)"].forEach(function (b) {
+    ["RB1 อาคารเรียนรวม 1 (ทรงกลม)", "RB5 อาคารเรียนรวม 5", "HB7 คณะมนุษยศาสตร์ (8 ชั้น)", CAMT, "TLIC ศูนย์นวัตกรรมการเรียนการสอน", "สำนักหอสมุด (Main Library)"].forEach(function (b) {
       settingRow(c2, { label: b, selected: b === CAMT, chevron: true });
     });
     spacer(c2, 8);

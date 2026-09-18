@@ -117,13 +117,19 @@ export const LOCATIONS: CampusDef[] = [
       },
       { name: "Architecture คณะสถาปัตยกรรมศาสตร์", rooms: ["ARCH101", "ARCH102", "ARCH201", ...named("Design Studio", 1, 5), ...onFloor(1, "Wood & Model Workshop")] },
 
-      // Active learning (ILC-A/B/C are separate buildings on the campus map)
-      { name: "ILC-A ห้องเรียน Active Learning (60–80 ที่นั่ง)", rooms: [...seq("ILC-A", 201, 208), ...seq("ILC-A", 301, 308)] },
-      { name: "ILC-B ห้องเรียน Active Learning (40–50 ที่นั่ง)", rooms: [...seq("ILC-B", 201, 208), ...seq("ILC-B", 301, 308)] },
-      { name: "ILC-C ห้องเรียน Active Learning (30–40 ที่นั่ง)", rooms: [...seq("ILC-C", 201, 208), ...seq("ILC-C", 301, 308)] },
+      // TLIC building: studios and training on floor 1, Active Learning classrooms ILC-A/B/C on floors 2–3
+      // (ILC-A ~60–80 seats, ILC-B ~40–50, ILC-C ~30–40).
       {
         name: "TLIC ศูนย์นวัตกรรมการเรียนการสอน",
-        rooms: onFloor(1, "One-Button Studio / Lightboard Studio", "Micro Studio 1", "Micro Studio 2", "Main Production Studio", "Smart Training Room", "Open Co-Working Space"),
+        rooms: [
+          ...onFloor(1, "One-Button Studio / Lightboard Studio", "Micro Studio 1", "Micro Studio 2", "Main Production Studio", "Smart Training Room", "Open Co-Working Space"),
+          ...seq("ILC-A", 201, 208),
+          ...seq("ILC-B", 201, 208),
+          ...seq("ILC-C", 201, 208),
+          ...seq("ILC-A", 301, 308),
+          ...seq("ILC-B", 301, 308),
+          ...seq("ILC-C", 301, 308),
+        ],
       },
 
       // Other real buildings from the campus map (no room list: generic areas)
@@ -182,6 +188,10 @@ export const LEGACY_BUILDINGS: Record<string, string> = {
   "หอพักนักศึกษาแพทย์": "อาคารเรียนรวม คณะแพทยศาสตร์",
   "อาคารศูนย์ประชุม": "AGI1 คณะอุตสาหกรรมเกษตร",
   "อาคารปฏิบัติการวิจัย": "ศูนย์วิจัยและฝึกอบรมแม่เหียะ",
+  // ILC-A/B/C are zones inside the TLIC building, not separate buildings.
+  "ILC-A ห้องเรียน Active Learning (60–80 ที่นั่ง)": "TLIC ศูนย์นวัตกรรมการเรียนการสอน",
+  "ILC-B ห้องเรียน Active Learning (40–50 ที่นั่ง)": "TLIC ศูนย์นวัตกรรมการเรียนการสอน",
+  "ILC-C ห้องเรียน Active Learning (30–40 ที่นั่ง)": "TLIC ศูนย์นวัตกรรมการเรียนการสอน",
 };
 
 export function roomName(r: RoomDef): string {

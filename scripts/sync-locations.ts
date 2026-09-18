@@ -19,8 +19,10 @@ type Room = { id: number; name_th: string; floor: number };
 
 const dry = process.argv.includes("--dry");
 
-/** Closest room: same floor + same trailing number, then same floor, then nearest lower floor, then any. */
+/** Closest room: same name, then same floor + same trailing number, then same floor, then nearest lower floor, then any. */
 function bestMatch(old: { name_th: string; floor: number }, candidates: Room[]): Room {
+  const same = candidates.find((c) => c.name_th === old.name_th);
+  if (same) return same;
   const sorted = [...candidates].sort((a, b) => a.floor - b.floor || a.name_th.localeCompare(b.name_th));
   const m = /(\d)(\d\d)\D*$/.exec(old.name_th);
   if (m) {
