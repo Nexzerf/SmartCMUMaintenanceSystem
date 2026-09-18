@@ -28,8 +28,10 @@ export function LoginForm({ expired }: { expired: boolean }) {
 
       <form
         className="mt-8 space-y-4"
+        action={action}
         noValidate
         onSubmit={(e) => {
+          // Hydrated path: dispatch manually so React does not reset the fields on a validation error.
           e.preventDefault();
           const data = new FormData(e.currentTarget);
           startTransition(() => action(data));

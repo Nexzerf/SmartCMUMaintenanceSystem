@@ -8,3 +8,7 @@ public/uploads/*
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+.vercel
+.env*
+!.env.example

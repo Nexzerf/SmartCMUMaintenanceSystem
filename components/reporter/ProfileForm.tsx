@@ -35,9 +35,11 @@ export function ProfileForm({ mode, initial }: { mode: "setup" | "edit"; initial
   return (
     <form
       className="space-y-5"
+      action={action}
       noValidate
       onSubmit={(ev) => {
-        // Dispatch manually so React does not reset the form: input survives validation errors.
+        // Hydrated path: dispatch manually so React does not reset the form on a validation error.
+        // Without JS ready, the form's action attribute above handles the submit instead.
         ev.preventDefault();
         const data = new FormData(ev.currentTarget);
         startTransition(() => action(data));
