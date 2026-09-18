@@ -2,7 +2,8 @@
  * Campuses, buildings and rooms of Chiang Mai University used by the app.
  *
  * Sources: room lists supplied by the project team; SOCMAP 2026 (Faculty of Social Sciences student
- * organization), ENTANEER MAP (Faculty of Engineering) and the Faculty of Nursing map; checked against the CMU campus map
+ * organization), ENTANEER MAP (Faculty of Engineering), the Faculty of Nursing map, Economics, Mathematics (MB2),
+ * Education, Humanities, Agriculture (agri.cmu.ac.th) and Agro-Industry maps and floor plans; checked against the CMU campus map
  * (Google My Maps "Chiang Mai University Buildings") for building codes. Where the map's code differs
  * from the supplied list (e.g. Education = EB1–EB4, Economics = ECB1–ECB2, Law = LB1), the building uses
  * the map code and the room names are kept exactly as supplied.
@@ -58,7 +59,9 @@ export const LOCATIONS: CampusDef[] = [
       { name: "HB1 คณะมนุษยศาสตร์", rooms: ["HB1101", "HB1102", "HB1201", "HB1202", "HB1203"] },
       { name: "HB2 คณะมนุษยศาสตร์", rooms: ["HB2101", "HB2102", "HB2201", "HB2202", "HB2301"] },
       { name: "HB3 คณะมนุษยศาสตร์", rooms: ["HB3101", "HB3102", "HB3201", "HB3202"] },
+      { name: "HB4 คณะมนุษยศาสตร์", rooms: GENERIC_AREAS },
       { name: "HB5 คณะมนุษยศาสตร์ (ห้องบรรยายรวม)", rooms: ["HB5100", "HB5200"] },
+      { name: "HB6 คณะมนุษยศาสตร์", rooms: GENERIC_AREAS },
       {
         name: "HB7 คณะมนุษยศาสตร์ (8 ชั้น)",
         rooms: [
@@ -189,16 +192,46 @@ export const LOCATIONS: CampusDef[] = [
       },
       { name: "LB1 คณะนิติศาสตร์", rooms: ["LAW1101", "LAW1201", "LAW1202", "LAW2101", "LAW2201", ...onFloor(1, "ห้อง Moot Court")] },
       { name: "PSB1 คณะรัฐศาสตร์และรัฐประศาสนศาสตร์", rooms: ["POL1101", "POL1201", "POL2101", "POL2201", "POL3101", "POL3201"] },
-      { name: "EB1 คณะศึกษาศาสตร์", rooms: ["EDU1101", "EDU1201"] },
-      { name: "EB2 คณะศึกษาศาสตร์", rooms: ["EDU2101", "EDU2201"] },
-      { name: "EB3 คณะศึกษาศาสตร์", rooms: ["EDU3101", "EDU3201"] },
-      { name: "EB4 คณะศึกษาศาสตร์", rooms: ["EDU4101"] },
+      // Faculty of Education: MAP Faculty of Education (student union). The map gives no floors,
+      // so its named rooms sit on floor 1 until the faculty confirms them.
+      { name: "EB1 คณะศึกษาศาสตร์", rooms: ["EDU1101", "EDU1201", ...onFloor(1, "หน่วยพัฒนานักศึกษา", "ห้องประชุมแจ่มจิต")] },
+      { name: "EB2 คณะศึกษาศาสตร์", rooms: ["EDU2101", "EDU2201", ...onFloor(1, "หน่วยประกันคุณภาพนักศึกษา", "หน่วยทะเบียนปริญญาตรี", "ห้องประชุมศึกษาศาสตร์สัมพันธ์")] },
+      { name: "EB3 คณะศึกษาศาสตร์", rooms: ["EDU3101", "EDU3201", ...onFloor(1, "ห้องสมุดคณะศึกษาศาสตร์", "ห้องประชุม 30 ปี", "ห้อง STEM")] },
+      { name: "EB4 คณะศึกษาศาสตร์", rooms: ["EDU4101", ...onFloor(1, "ห้องประชุม 40 ปี")] },
+      { name: "EB5 คณะศึกษาศาสตร์ อาคารวันครู", rooms: [...GENERIC_AREAS, ...onFloor(1, "ศาลาแดง")] },
+      { name: "EB6 คณะศึกษาศาสตร์", rooms: GENERIC_AREAS },
+      { name: "EB7 คณะศึกษาศาสตร์", rooms: GENERIC_AREAS },
+      { name: "EB8 คณะศึกษาศาสตร์", rooms: GENERIC_AREAS },
+      { name: "EB9 คณะศึกษาศาสตร์ อาคารพลศึกษา", rooms: GENERIC_AREAS },
+      { name: "คณะศึกษาศาสตร์ อาคารศูนย์สันติศึกษา (พัฒนาเด็กเล็ก)", rooms: GENERIC_AREAS },
+      { name: "คณะศึกษาศาสตร์ โรงอาหารและสโมสรนักศึกษา", rooms: onFloor(1, "โรงอาหาร", "สโมสรนักศึกษาคณะศึกษาศาสตร์", "ห้องน้ำ", "ภายนอกอาคาร") },
+      { name: "คณะศึกษาศาสตร์ อาคารกิจกรรมนักศึกษา", rooms: GENERIC_AREAS },
+      { name: "คณะศึกษาศาสตร์ สนามหญ้าสแตนแดง", rooms: OUTDOOR_AREAS },
+      { name: "คณะศึกษาศาสตร์ ลานน้ำพุ", rooms: OUTDOOR_AREAS },
+      { name: "โรงเรียนสาธิตมหาวิทยาลัยเชียงใหม่ อาคาร 1", rooms: GENERIC_AREAS },
+      { name: "โรงเรียนสาธิตมหาวิทยาลัยเชียงใหม่ อาคาร 2", rooms: GENERIC_AREAS },
       { name: "MCB2 คณะการสื่อสารมวลชน", rooms: ["MC1101", "MC1102", "MC1201", "MC2101", ...onFloor(1, "ห้องตัดต่อ", "Studio Broadcast")] },
 
       // 3. Science and technology
       { name: "SCB1 คณะวิทยาศาสตร์ (อาคาร 30 ปี)", rooms: ["SCB1100", "SCB1200", "SCB1300"] },
       { name: "SCB2 คณะวิทยาศาสตร์ (อาคาร 40 ปี)", rooms: ["SCB2100", "SCB2200", "SCB2300", "SCB2400"] },
-      { name: "MB2 อาคารคณิตศาสตร์", rooms: ["MB2101", "MB2105", "MB2201", "MB2205", "MB2301"] },
+      {
+        // Floor plans 1–3. MB2101–07, MB2201–07 and MB2301–07 are lecturers' offices.
+        name: "MB2 อาคารคณิตศาสตร์",
+        rooms: [
+          ...seq("MB", 2101, 2107),
+          ...onFloor(1, "MB2108 (ห้องพัสดุ/เอกสาร)", "ธุรการภาควิชา", "MB2111", "MB2112", "MB2211 Slope Math (ชั้น 1–2)", "ลาน Square Root", "ร้านกาแฟ", "สนามแบดมินตัน", "ลานจอดมอเตอร์ไซค์", "ที่จอดรถบุคลากร"),
+          ...seq("MB", 2201, 2207),
+          "MB2212", "MB2213", "MB2214",
+          ...seq("MB", 2218, 2232),
+          ...seq("MB", 2301, 2307),
+          ...onFloor(3, "MB2308A", "MB2308B", "MB2308C", "MB2308D", "MB2308E", "MB2308F"),
+          "MB2309", "MB2311", "MB2312", "MB2313",
+          ...seq("MB", 2314, 2319),
+          ...onFloor(3, "MB2320A", "MB2320B", "MB2320G", "MB2320H", "ห้องประชุม 1", "ห้องอ่านหนังสือ"),
+        ],
+      },
+      { name: "SCB4 คณะวิทยาศาสตร์", rooms: GENERIC_AREAS },
       { name: "STB อาคารสถิติ", rooms: ["STAT101", "STAT102", "STAT201", ...onFloor(1, "STAT Lab")] },
       { name: "PB1 อาคารฟิสิกส์", rooms: ["PHYS101", "PHYS102", "PHYS201", "PHYS202", ...named("Lab ฟิสิกส์", 1, 2)] },
       { name: "CB1 อาคารเคมี", rooms: ["CHEM101", "CHEM102", "CHEM201", "CHEM202", ...onFloor(1, "Lab เคมีพื้นฐาน")] },
@@ -282,6 +315,33 @@ export const LOCATIONS: CampusDef[] = [
         ],
       },
 
+      // Faculty of Agriculture: agri.cmu.ac.th "ผังอาคารเรียน" (building map and AB5 floors 3–4).
+      { name: "AB1 คณะเกษตรศาสตร์ ตึกอาคารเรียนเดิม", rooms: GENERIC_AREAS },
+      { name: "AB2 คณะเกษตรศาสตร์ ตึกภาควิชาสัตวศาสตร์และสัตว์น้ำ", rooms: GENERIC_AREAS },
+      { name: "AB3 คณะเกษตรศาสตร์ ตึกพืชศาสตร์", rooms: GENERIC_AREAS },
+      { name: "AB4 คณะเกษตรศาสตร์ ห้องประชุมพิศิษฐ์ วรอุไร", rooms: onFloor(1, "ห้องประชุมพิศิษฐ์ วรอุไร", "ห้องน้ำ", "ภายนอกอาคาร") },
+      {
+        name: "AB5 คณะเกษตรศาสตร์ อาคารเฉลิมพระเกียรติ",
+        rooms: [
+          ...onFloor(1, "โถงและพื้นที่ส่วนกลาง"),
+          ...onFloor(3,
+            "AB5-303 (30 ที่นั่ง)", "AB5-304 (15 ที่นั่ง)", "AB5-305 (12 ที่นั่ง)", "AB5-306 (12 ที่นั่ง)",
+            "AB5-331 (50 ที่นั่ง)", "AB5-333 (100 ที่นั่ง)", "AB5-335 (50 ที่นั่ง)",
+            "AB5-343 (20 ที่นั่ง)", "AB5-344 (20 ที่นั่ง)", "AB5-345 (20 ที่นั่ง)", "AB5-346 (20 ที่นั่ง)",
+            "AB5-354 (120 ที่นั่ง)", "AB5-357 (50 ที่นั่ง)", "AB5-358 (50 ที่นั่ง)", "AB5-359 (50 ที่นั่ง)",
+            "ห้องประชุมสุขุมฯ", "ห้องประชุม 1 ชั้น 3", "ห้องประชุม 2 ชั้น 3", "ห้องเตรียมกาแฟ",
+            "ห้องปฏิบัติการคอมพิวเตอร์", "ห้องศูนย์สารสนเทศและเทคโนโลยี", "ห้องน้ำ ชั้น 3"),
+          ...onFloor(4, "AB5-401 (รวมกับ 402: 250 ที่นั่ง)", "AB5-402", "AB5-403 (120 ที่นั่ง)", "AB5-456 (50 ที่นั่ง)", "SAIWAM", "ห้องสมุดคณะเกษตรศาสตร์", "ห้องน้ำ ชั้น 4"),
+        ],
+      },
+      { name: "คณะเกษตรศาสตร์ ภาควิชาโรคพืช", rooms: GENERIC_AREAS },
+      { name: "คณะเกษตรศาสตร์ อาคารกีฏ 2", rooms: GENERIC_AREAS },
+      { name: "คณะเกษตรศาสตร์ สถานีวิจัยและพัฒนาหลังการเก็บเกี่ยว", rooms: GENERIC_AREAS },
+      { name: "คณะเกษตรศาสตร์ ศูนย์วิจัยระบบทรัพยากรเกษตร", rooms: GENERIC_AREAS },
+      { name: "คณะเกษตรศาสตร์ ศูนย์วิจัยและฝึกอบรมที่สูง", rooms: GENERIC_AREAS },
+      { name: "คณะเกษตรศาสตร์ โรงทดลอง", rooms: GENERIC_AREAS },
+      { name: "คณะเกษตรศาสตร์ โรงช่าง", rooms: GENERIC_AREAS },
+
       // Other real buildings from the campus map (no room list: generic areas)
       { name: "สำนักหอสมุด (Main Library)", rooms: GENERIC_AREAS },
       { name: "ITSC สำนักบริการเทคโนโลยีสารสนเทศ", rooms: GENERIC_AREAS },
@@ -324,9 +384,19 @@ export const LOCATIONS: CampusDef[] = [
   {
     name: "วิทยาเขตแม่เหียะ",
     buildings: [
-      { name: "AGI1 คณะอุตสาหกรรมเกษตร", rooms: ["AGI1101", "AGI1102", "AGI1201", "AGI1202"] },
-      { name: "AGI2 คณะอุตสาหกรรมเกษตร", rooms: ["AGI2101", "AGI2201"] },
-      { name: "AGI3 คณะอุตสาหกรรมเกษตร", rooms: ["AGI3101", ...onFloor(1, "Pilot Plant Lab")] },
+      // Faculty of Agro-Industry: the faculty's internal map (อาคาร 1–5 with their programmes).
+      { name: "AGI1 คณะอุตสาหกรรมเกษตร อาคาร 1 (Biot)", rooms: ["AGI1101", "AGI1102", "AGI1201", "AGI1202"] },
+      { name: "AGI2 คณะอุตสาหกรรมเกษตร อาคาร 2 (PKT)", rooms: ["AGI2101", "AGI2201"] },
+      { name: "AGI3 คณะอุตสาหกรรมเกษตร อาคาร 3 (FST)", rooms: ["AGI3101", ...onFloor(1, "Pilot Plant Lab")] },
+      { name: "AGI4 คณะอุตสาหกรรมเกษตร อาคาร 4 (PDT, MPT)", rooms: GENERIC_AREAS },
+      { name: "AGI5 คณะอุตสาหกรรมเกษตร อาคาร 5 (FE)", rooms: GENERIC_AREAS },
+      { name: "คณะอุตสาหกรรมเกษตร อาคารสำนักงานคณะ", rooms: GENERIC_AREAS },
+      { name: "คณะอุตสาหกรรมเกษตร อาคารหอประชุม/โรงอาหาร", rooms: onFloor(1, "หอประชุม", "โรงอาหาร", "ห้องน้ำ", "ภายนอกอาคาร") },
+      { name: "คณะอุตสาหกรรมเกษตร โรงงานต้นแบบ", rooms: GENERIC_AREAS },
+      { name: "คณะอุตสาหกรรมเกษตร ศูนย์สัตว์ทดลอง", rooms: GENERIC_AREAS },
+      { name: "คณะอุตสาหกรรมเกษตร สนามกีฬา", rooms: OUTDOOR_AREAS },
+      { name: "คณะอุตสาหกรรมเกษตร Fernpresso at Lake", rooms: GENERIC_AREAS },
+      { name: "อุทยานวิทยาศาสตร์ภาคเหนือ", rooms: GENERIC_AREAS },
       { name: "VET คณะสัตวแพทยศาสตร์", rooms: ["VET1101", "VET1201", "VET2101", "VET2201", "VET3101", ...onFloor(1, "Vet Anatomy Lab")] },
       { name: "ศูนย์วิจัยและฝึกอบรมแม่เหียะ", rooms: named("ห้องฝึกอบรมแปลงวิจัย", 1, 2) },
     ],
@@ -351,7 +421,10 @@ export const LEGACY_BUILDINGS: Record<string, string> = {
   "CPE ภาควิชาวิศวกรรมคอมพิวเตอร์": "คณะวิศวกรรมศาสตร์ อาคาร 30 ปี",
   "อาคารคณะพยาบาลศาสตร์": "NUR1 คณะพยาบาลศาสตร์ อาคาร 1",
   "หอพักนักศึกษาแพทย์": "อาคารเรียนรวม คณะแพทยศาสตร์",
-  "อาคารศูนย์ประชุม": "AGI1 คณะอุตสาหกรรมเกษตร",
+  "อาคารศูนย์ประชุม": "AGI1 คณะอุตสาหกรรมเกษตร อาคาร 1 (Biot)",
+  "AGI1 คณะอุตสาหกรรมเกษตร": "AGI1 คณะอุตสาหกรรมเกษตร อาคาร 1 (Biot)",
+  "AGI2 คณะอุตสาหกรรมเกษตร": "AGI2 คณะอุตสาหกรรมเกษตร อาคาร 2 (PKT)",
+  "AGI3 คณะอุตสาหกรรมเกษตร": "AGI3 คณะอุตสาหกรรมเกษตร อาคาร 3 (FST)",
   "อาคารปฏิบัติการวิจัย": "ศูนย์วิจัยและฝึกอบรมแม่เหียะ",
   // ILC-A/B/C are zones inside the TLIC building, not separate buildings.
   "ILC-A ห้องเรียน Active Learning (60–80 ที่นั่ง)": "TLIC ศูนย์นวัตกรรมการเรียนการสอน",
