@@ -36,6 +36,7 @@ export async function getDashboard(range: DashboardRange) {
   const inRange = sql`r.created_at >= ${start} and r.created_at < ${end} and r.merged_into_id is null`;
   const openList = sql`('pending','accepted','assigned','in_progress','waiting_parts','need_info','completed')`;
 
+  const t0 = Date.now();
   const [[kpi], [closeTime], [rating], daily, byStatus, buildings, categories, technicians, oldestUrgent, rows] = await Promise.all([
     sql<{ total: number; open: number; urgent_open: number }[]>`
       select count(*)::int as total,
@@ -80,6 +81,8 @@ export async function getDashboard(range: DashboardRange) {
       left join ratings rt on rt.request_id = r.id
       where ${inRange} order by r.created_at`,
   ]);
+
+  console.log(`[perf] dashboard.queries ${Date.now() - t0}ms`);
 
   // Fill missing days with zero so the line is continuous.
   const counts = new Map(daily.map((d) => [d.day, d.count]));
