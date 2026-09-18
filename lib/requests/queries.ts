@@ -60,12 +60,17 @@ const LIST_JOINS = () => sql`
 `;
 
 export async function listReporterRequests(userId: string) {
-  return sql<RequestListItem[]>`
+  const rows = await sql<RequestListItem[]>`
     select ${LIST_COLUMNS(userId)} ${LIST_JOINS()}
     where r.reporter_id = ${userId}
        or exists(select 1 from request_followers f where f.request_id = r.id and f.user_id = ${userId})
     order by r.updated_at desc`;
+  // Followed requests belong to someone else: do not send that person's name to this reporter's browser.
+  return rows.map((r) => (r.reporter_id === userId ? r : { ...r, reporter_name: FOLLOWED_REPORTER_NAME }));
 }
+
+/** Shown instead of the original reporter's name to people who only follow a request (PDPA). */
+const FOLLOWED_REPORTER_NAME = "ผู้แจ้ง";
 
 export async function listTechnicianJobs(techId: string) {
   return sql<RequestListItem[]>`
@@ -150,11 +155,15 @@ export async function getRequestForUser(code: string, user: CurrentUser): Promis
     (user.role === "reporter" && (base.reporter_id === user.id || base.is_following)) ||
     (user.role === "technician" && base.technician_id === user.id);
   if (!allowed) return null;
+  // A follower sees the problem and its progress, not who reported it.
+  const hideReporter = user.role === "reporter" && base.reporter_id !== user.id;
 
   const [images, history, notes, info, [rating], [{ count }]] = await runQueries([
     () => sql<RequestDetail["images"]>`select id, url, kind from request_images where request_id = ${base.id} order by created_at`,
     () => sql<RequestDetail["history"]>`
-      select h.id, h.from_status, h.to_status, h.note, u.full_name as actor_name, h.created_at
+      select h.id, h.from_status, h.to_status, h.note,
+        case when ${hideReporter} and h.actor_id = ${base.reporter_id} then ${FOLLOWED_REPORTER_NAME} else u.full_name end as actor_name,
+        h.created_at
       from status_history h left join users u on u.id = h.actor_id
       where h.request_id = ${base.id} order by h.created_at, h.id`,
     () => sql<RequestDetail["repair_notes"]>`
@@ -169,6 +178,8 @@ export async function getRequestForUser(code: string, user: CurrentUser): Promis
   const canViewPhone = user.role === "admin" || (user.role === "technician" && base.technician_id === user.id);
   return {
     ...base,
+    reporter_name: hideReporter ? FOLLOWED_REPORTER_NAME : base.reporter_name,
+    reporter_faculty: hideReporter ? null : base.reporter_faculty,
     reporter_phone: canViewPhone ? base.reporter_phone : null,
     images,
     history,

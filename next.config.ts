@@ -17,6 +17,21 @@ const nextConfig: NextConfig = {
     "/api/admin/export/pdf": ["./node_modules/@fontsource/ibm-plex-sans-thai/files/*-normal.woff", "./node_modules/pdfkit/js/**/*"],
   },
   poweredByHeader: false,
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          // No other site may frame these pages (clickjacking on the admin and job actions).
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" },
+        ],
+      },
+    ];
+  },
   // Pin tracing to this project (a lockfile in a parent folder confuses auto-detection).
   outputFileTracingRoot: path.join(__dirname),
 };

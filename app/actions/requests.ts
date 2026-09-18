@@ -64,9 +64,15 @@ export async function createRequest(input: z.input<typeof createSchema>): Promis
   }
 }
 
+const positiveInt = z.number().int().positive();
+const uuid = z.string().uuid();
+
 export async function checkDuplicate(roomId: number, categoryId: number) {
   const user = await requireActionUser("reporter");
-  const dup = await findDuplicate(roomId, categoryId, user.id);
+  const room = positiveInt.safeParse(roomId);
+  const category = positiveInt.safeParse(categoryId);
+  if (!room.success || !category.success) return null;
+  const dup = await findDuplicate(room.data, category.data, user.id);
   if (!dup) return null;
   return serialize({
     id: dup.id,
@@ -88,6 +94,7 @@ export async function checkDuplicate(roomId: number, categoryId: number) {
 export async function followRequest(requestId: string): Promise<ActionResult<{ code: string }>> {
   try {
     const user = await requireActionUser("reporter");
+    requestId = uuid.parse(requestId);
     const [req] = await sql<{ code: string; status: string }[]>`select code, status from requests where id = ${requestId}`;
     if (!req) return { ok: false, error: "ไม่พบคำร้องนี้" };
     if (["closed", "cancelled", "rejected"].includes(req.status)) return { ok: false, error: "คำร้องนี้ปิดไปแล้ว กรุณาแจ้งใหม่" };
@@ -104,7 +111,7 @@ export async function followRequest(requestId: string): Promise<ActionResult<{ c
 export async function cancelRequest(requestId: string): Promise<ActionResult> {
   try {
     const user = await requireActionUser("reporter");
-    await transitionStatus({ requestId, to: "cancelled", actor: { id: user.id, role: "reporter" }, note: "ผู้แจ้งยกเลิกคำร้อง" });
+    await transitionStatus({ requestId: uuid.parse(requestId), to: "cancelled", actor: { id: user.id, role: "reporter" }, note: "ผู้แจ้งยกเลิกคำร้อง" });
     revalidatePath("/", "layout");
     return { ok: true };
   } catch (err) {

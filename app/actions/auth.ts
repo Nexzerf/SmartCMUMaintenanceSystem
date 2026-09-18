@@ -2,11 +2,12 @@
 
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sql } from "@/lib/db";
 import { SESSION_COOKIE, sessionCookieOptions, signSession } from "@/lib/auth/session";
+import { clearFailures, lockedMinutes, recordFailure } from "@/lib/auth/throttle";
 import { ROLE_HOME, type Role } from "@/lib/status";
 
 export type LoginState = { error?: string; username?: string };
@@ -27,6 +28,12 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   const username = String(formData.get("username") ?? "").split("@")[0];
   if (!parsed.success) return { error: parsed.error.issues[0].message, username };
 
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  // Per account+IP (not per account alone), so nobody can lock another user out by typing wrong passwords.
+  const throttleKeys = [`u:${parsed.data.username}|${ip}`, `ip:${ip}`];
+  const wait = lockedMinutes(throttleKeys);
+  if (wait > 0) return { error: `กรอกรหัสผ่านผิดหลายครั้งเกินไป กรุณารอประมาณ ${wait} นาทีแล้วลองใหม่`, username };
+
   let user: { id: string; username: string; role: Role; password_hash: string; profile_completed: boolean } | undefined;
   try {
     [user] = await sql<{ id: string; username: string; role: Role; password_hash: string; profile_completed: boolean }[]>`
@@ -44,7 +51,11 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   } catch (err) {
     console.error(`[login] invalid password_hash for "${parsed.data.username}"`, err);
   }
-  if (!user || !ok) return { error: "Username หรือรหัสผ่านไม่ถูกต้อง", username };
+  if (!user || !ok) {
+    recordFailure(throttleKeys);
+    return { error: "Username หรือรหัสผ่านไม่ถูกต้อง", username };
+  }
+  clearFailures([throttleKeys[0]]);
 
   let token: string;
   try {

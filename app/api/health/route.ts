@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth/guard";
 import { sql } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Deployment check: which settings are present and whether the database answers.
- * Reports booleans and counts only — never values, hosts, or keys.
+ * Deployment check. Anyone gets only { ready }; the breakdown (which settings are present, database
+ * role, search_path, row counts, error text) is shown to a signed-in admin only.
+ * It never includes values, hosts, or keys.
  */
 export async function GET() {
   const env = {
@@ -45,5 +47,15 @@ export async function GET() {
   database = { ...database, ...connection };
 
   const ready = Object.values(env).every(Boolean) && database.ok === true && database.bad_hashes === 0;
-  return NextResponse.json({ ready, env, database }, { status: ready ? 200 : 503, headers: { "Cache-Control": "no-store" } });
+  // A deployment that cannot reach the database has no admin session either; the details then
+  // stay in the server log for whoever deploys it.
+  let isAdmin = false;
+  try {
+    isAdmin = (await getCurrentUser())?.role === "admin";
+  } catch {
+    isAdmin = false;
+  }
+  if (!ready && !isAdmin) console.warn("[health] not ready", JSON.stringify({ env, database }));
+  const body = isAdmin ? { ready, env, database } : { ready };
+  return NextResponse.json(body, { status: ready ? 200 : 503, headers: { "Cache-Control": "no-store" } });
 }

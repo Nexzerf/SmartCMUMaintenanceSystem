@@ -41,6 +41,7 @@ export async function saveCategory(input: z.input<typeof categorySchema>): Promi
 export async function deleteCategory(id: number): Promise<ActionResult> {
   try {
     await guard();
+    id = z.number().int().positive().parse(id);
     const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from requests where category_id = ${id}`;
     if (n > 0) return { ok: false, error: `ประเภทนี้มีคำร้องอยู่ ${n} รายการ จึงลบไม่ได้ ให้ปิดการใช้งานแทน` };
     await sql`delete from categories where id = ${id}`;
@@ -93,6 +94,8 @@ export async function saveRoom(input: { id?: number; building_id: number; floor:
 export async function deleteLocation(kind: "campus" | "building" | "room", id: number): Promise<ActionResult> {
   try {
     await guard();
+    kind = z.enum(["campus", "building", "room"]).parse(kind);
+    id = z.number().int().positive().parse(id);
     const roomFilter =
       kind === "room"
         ? sql`r.room_id = ${id}`

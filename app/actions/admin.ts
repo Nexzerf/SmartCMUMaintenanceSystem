@@ -52,9 +52,10 @@ export async function setUrgency(requestId: string, urgency: string): Promise<Ac
     await requireActionUser("admin");
     const u = z.enum(["low", "normal", "urgent"]).parse(urgency);
     const [row] = await sql<{ reporter_id: string; assigned_technician_id: string | null }[]>`
-      update requests set urgency = ${u}, updated_at = now() where id = ${id.parse(requestId)}
+      update requests set urgency = ${u}, updated_at = now()
+      where id = ${id.parse(requestId)} and status not in ('closed', 'cancelled', 'rejected')
       returning reporter_id, assigned_technician_id`;
-    if (!row) return { ok: false, error: "ไม่พบคำร้องนี้" };
+    if (!row) return { ok: false, error: "เปลี่ยนความเร่งด่วนไม่ได้ คำร้องนี้ปิดไปแล้วหรือไม่พบคำร้อง" };
     await pingUsers([row.reporter_id, ...(row.assigned_technician_id ? [row.assigned_technician_id] : [])]);
     return done();
   } catch (err) {
