@@ -26,6 +26,12 @@
   </fieldset>
 
   <fieldset>
+    <legend>ขนาดหน้าจอ</legend>
+    <label><input type="checkbox" id="mobile" checked /><span>มือถือ<small>390 × 844 ทั้งผู้แจ้ง ช่าง และผู้ดูแลระบบ</small></span></label>
+    <label><input type="checkbox" id="desktop" checked /><span>เดสก์ท็อป<small>1440 × 900 ทั้งผู้แจ้ง ช่าง และผู้ดูแลระบบ</small></span></label>
+  </fieldset>
+
+  <fieldset>
     <legend>ตัวเลือก</legend>
     <label><input type="checkbox" id="proto" checked /><span>โยงเส้น Interaction<small>ปุ่มและลิงก์พาไปหน้าถัดไป ดูได้ในแท็บ Prototype</small></span></label>
     <label><input type="checkbox" id="replace" checked /><span>แทนที่หน้าเดิมที่เคยสร้าง<small>ถ้าไม่ติ๊ก จะสร้างหน้าใหม่เพิ่ม</small></span></label>
@@ -42,11 +48,16 @@
       $("status").textContent = "เลือกอย่างน้อย 1 ชุด";
       return;
     }
+    if (!$("mobile").checked && !$("desktop").checked) {
+      $("status").className = "error";
+      $("status").textContent = "เลือกอย่างน้อย 1 ขนาดหน้าจอ";
+      return;
+    }
     $("go").disabled = true;
     $("status").className = "";
     $("status").textContent = "กำลังเริ่ม...";
     parent.postMessage(
-      { pluginMessage: { type: "build", ui: $("ui").checked, wf: $("wf").checked, proto: $("proto").checked, replace: $("replace").checked } },
+      { pluginMessage: { type: "build", ui: $("ui").checked, wf: $("wf").checked, mobile: $("mobile").checked, desktop: $("desktop").checked, proto: $("proto").checked, replace: $("replace").checked } },
       "*",
     );
   };

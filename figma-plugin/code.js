@@ -1,8 +1,8 @@
 // Smart CMU Maintenance — Figma screen generator.
-// Builds every screen of the web app twice (UI and wireframe) and wires prototype interactions.
+// Builds every screen of the web app for mobile and desktop, as UI and as wireframe, and wires prototype interactions.
 // Plain ES2017: the Figma plugin sandbox does not need a build step for this file.
 
-figma.showUI(__html__, { width: 360, height: 470 });
+figma.showUI(__html__, { width: 360, height: 600 });
 
 figma.ui.onmessage = async function (msg) {
   if (!msg || msg.type !== "build") return;
@@ -306,8 +306,9 @@ let LINKS = [];
 let SCREENS = {};
 let WIRE_FAILED = [];
 
+// Links name a screen by its base key ("R10"); the current device picks the frame ("R10" or "R10d").
 function link(node, to) {
-  LINKS.push({ node: node, to: to });
+  if (to) LINKS.push({ node: node, to: K(to) });
   return node;
 }
 
@@ -317,15 +318,26 @@ function screenOf(node) {
   while (n.parent && n.parent.type !== "PAGE" && n.parent.type !== "SECTION") n = n.parent;
   return n;
 }
+function sectionOf(node) {
+  let n = node.parent;
+  while (n && n.type !== "SECTION" && n.type !== "PAGE") n = n.parent;
+  return n;
+}
 
-async function wire(page) {
+async function wire(page, flows) {
   let count = 0;
   const failed = [];
   const byNode = new Map();
   for (const l of LINKS) {
-    if (!SCREENS[l.to] || l.node.removed) continue;
+    const dest = SCREENS[l.to];
+    if (!dest || l.node.removed) continue;
     // Figma rejects NAVIGATE to the frame the click starts in (e.g. the active tab on its own screen).
-    if (screenOf(l.node) === SCREENS[l.to]) continue;
+    if (screenOf(l.node) === dest) continue;
+    // Each section is a self-contained flow; a link that leaves it may not be clickable when presenting.
+    if (sectionOf(l.node) !== sectionOf(dest)) {
+      failed.push(screenOf(l.node).name.split(" · ")[0] + " → " + l.to + " (ข้ามกลุ่ม)");
+      continue;
+    }
     byNode.set(l.node, l.to); // last link wins for a node
   }
   for (const entry of byNode) {
@@ -340,7 +352,6 @@ async function wire(page) {
             destinationId: dest.id,
             navigation: "NAVIGATE",
             transition: { type: "DISSOLVE", easing: { type: "EASE_OUT" }, duration: 0.25 },
-            preserveScrollPosition: false,
           },
         ],
       },
@@ -357,11 +368,9 @@ async function wire(page) {
   }
   WIRE_FAILED = failed;
   try {
-    page.flowStartingPoints = [
-      { nodeId: SCREENS.R01.id, name: "1 · ผู้แจ้ง: เข้าสู่ระบบ → แจ้งซ่อม → ติดตาม" },
-      { nodeId: SCREENS.T01.id, name: "2 · ช่าง: รับงาน → ส่งงาน" },
-      { nodeId: SCREENS.A01.id, name: "3 · ผู้ดูแลระบบ: รับเรื่อง → มอบหมายช่าง" },
-    ];
+    page.flowStartingPoints = flows
+      .filter(function (f) { return SCREENS[f[0]]; })
+      .map(function (f) { return { nodeId: SCREENS[f[0]].id, name: f[1] }; });
   } catch (e) {
     console.warn("flowStartingPoints", e);
   }
@@ -628,16 +637,108 @@ function checkbox(parent, checked) {
 }
 
 // ---------------------------------------------------------------------------
-// Mobile scaffolding
+// Screen scaffolding: every screen is built for mobile (390 × 844) and desktop (1440 × 900)
 // ---------------------------------------------------------------------------
 
 const MW = 390;
 const MH = 844;
+const DW = 1440;
+const DH = 900;
+const SIDEBAR_W = 248;
+const DESK_W = DW - SIDEBAR_W - 64; // content width next to the sidebar
 
-function mobileScreen(key, title) {
-  const f = box({ name: key + " · " + title, fill: "page", clip: true, w: MW });
-  statusBar(f);
-  SCREENS[key] = f;
+let DEVICE = "m"; // "m" | "d"
+let CUR_W = MW - 40; // width of the current content column
+
+function isD() {
+  return DEVICE === "d";
+}
+function K(key) {
+  return isD() ? key + "d" : key;
+}
+// Desktop columns carry no side padding of their own.
+function hp(p) {
+  const q = pad(p).slice();
+  if (isD()) {
+    q[1] = 0;
+    q[3] = 0;
+  }
+  return q;
+}
+
+const NAV = {
+  reporter: {
+    sub: "นักศึกษา",
+    person: "อนันต์ ศรีวงศ์",
+    logout: "R01",
+    cta: ["แจ้งซ่อม", "R04"],
+    items: [["home", "house", "หน้าแรก", "R03"], ["history", "history", "ประวัติการแจ้งซ่อม", "R13"], ["notif", "bell", "แจ้งเตือน", "R14", 2], ["profile", "user", "โปรไฟล์", "R15"]],
+  },
+  tech: {
+    sub: "ช่างซ่อมบำรุง",
+    person: "ช่างสมศักดิ์ ใจดี",
+    logout: "T00",
+    items: [["jobs", "briefcase", "งานของฉัน", "T01"], ["notif", "bell", "แจ้งเตือน", "T04", 1], ["profile", "user", "โปรไฟล์", "T05"]],
+  },
+  admin: {
+    sub: "เมนูผู้ดูแลระบบ",
+    person: "พรทิพย์ วงศ์ใหญ่",
+    logout: "A00",
+    items: [["dash", "grid", "แดชบอร์ด", "A01"], ["requests", "clipboard", "คำร้องทั้งหมด", "A02", 6], ["settings", "database", "ข้อมูลพื้นฐาน", "A04"]],
+  },
+};
+
+// o: { role, nav, tabs, colW, center, action: [label, to] }
+function screen(key, title, o) {
+  o = o || {};
+  const name = K(key) + " · " + title;
+  if (!isD()) {
+    const f = box({ name: name, fill: "page", clip: true, w: MW });
+    statusBar(f);
+    if (o.role === "admin") adminTopBar(f, o.nav);
+    SCREENS[K(key)] = f;
+    CUR_W = MW - 40;
+    return { frame: f, col: f, o: o };
+  }
+  const f = box({ name: name, dir: "h", fill: "page", clip: true, cross: "MIN", w: DW });
+  SCREENS[K(key)] = f;
+  if (o.role) sidebar(f, o.role, o.nav);
+  const main = box({ name: "Main", p: [28, 32, 40, 32], cross: o.center ? "CENTER" : "MIN" });
+  put(f, main, { grow: true });
+  const w = o.colW || 820;
+  const col = box({ name: "Column", w: w });
+  main.appendChild(col);
+  CUR_W = w;
+  return { frame: f, col: col, o: o };
+}
+
+// Short screens fill the device; tall ones scroll vertically in the prototype.
+function finish(s) {
+  const f = s.frame;
+  const o = s.o || {};
+  let bar = null;
+  if (isD() && o.action) {
+    spacer(s.col, 8);
+    button(s.col, o.action[0], { size: "lg", block: true, to: o.action[1] });
+  }
+  if (!isD() && o.action) bar = formActionBar(f, o.action[0], o.action[1]);
+  if (!isD() && o.tabs) bar = tabBar(f, o.role, o.nav);
+  const H = isD() ? DH : MH;
+  if (f.height < H) {
+    if (!isD()) {
+      const sp = box({ name: "Fill" });
+      f.insertChild(bar ? f.children.length - 1 : f.children.length, sp);
+      sp.layoutSizingHorizontal = "FILL";
+      f.primaryAxisSizingMode = "FIXED";
+      f.resize(MW, MH);
+      sp.layoutGrow = 1;
+    } else {
+      f.counterAxisSizingMode = "FIXED";
+      f.resize(DW, DH);
+    }
+  } else {
+    f.overflowDirection = "VERTICAL";
+  }
   return f;
 }
 
@@ -656,30 +757,27 @@ function statusBar(parent) {
   s.appendChild(right);
 }
 
-// Give short screens a full phone height and push the tab bar to the bottom.
-function finishMobile(f, tabs) {
-  let bar = null;
-  if (tabs) bar = tabBar(f, tabs[0], tabs[1]);
-  if (f.height < MH) {
-    const sp = box({ name: "Fill" });
-    f.insertChild(bar ? f.children.length - 1 : f.children.length, sp);
-    sp.layoutSizingHorizontal = "FILL";
-    f.primaryAxisSizingMode = "FIXED";
-    f.resize(MW, MH);
-    sp.layoutGrow = 1;
-  }
-  return f;
-}
-
 function body(parent, o) {
   o = o || {};
-  const b = box({ name: "Content", gap: o.gap == null ? 20 : o.gap, p: o.p == null ? [8, 20, 24, 20] : o.p });
+  const b = box({ name: "Content", gap: o.gap == null ? 20 : o.gap, p: hp(o.p == null ? [8, 20, 24, 20] : o.p) });
   put(parent, b, { fillW: true });
   return b;
 }
 
+// Two columns on desktop; on mobile both return the same stack so call order is the stacking order.
+function twoCols(parent, leftW) {
+  if (!isD()) return [parent, parent];
+  const row = box({ name: "Two columns", dir: "h", gap: 24, cross: "MIN" });
+  put(parent, row, { fillW: true });
+  const l = box({ name: "Left", gap: 18, w: leftW });
+  row.appendChild(l);
+  const r = box({ name: "Right", gap: 18 });
+  put(row, r, { grow: true });
+  return [l, r];
+}
+
 function pageHeader(parent, o) {
-  const h = box({ name: "Header", gap: 2, p: [o.large ? 12 : 8, 20, 4, 20] });
+  const h = box({ name: "Header", gap: 2, p: hp([o.large ? 12 : 8, 20, 4, 20]) });
   put(parent, h, { fillW: true });
   if (o.back) linkText(h, o.back[0], o.back[1], { icon: "chevron-left", iconSize: 22 });
   const row = box({ name: "Title row", dir: "h", gap: 12, cross: "CENTER" });
@@ -739,11 +837,120 @@ function tabBar(f, role, active) {
   return bar;
 }
 
-// Full-screen bottom sheet shown over a copy of the base screen.
-function sheetScreen(key, title, base, build) {
+function brandMark(parent, size) {
+  const tile = box({ name: "Mark", main: "CENTER", cross: "CENTER", w: size, h: size, r: size > 38 ? 11 : 10, fill: "brand" });
+  icon(tile, "wrench", Math.round(size / 2), "onBrand");
+  parent.appendChild(tile);
+  return tile;
+}
+
+function navBadge(parent, n) {
+  const badge = box({ name: "Badge", main: "CENTER", cross: "CENTER", fill: "redI", p: [0, 7], h: 22 });
+  badge.cornerRadius = 11;
+  text(badge, String(n), { size: 12, w: "b", c: "#FFFFFF", lh: 120 });
+  parent.appendChild(badge);
+}
+
+// Desktop left sidebar for any role (matches AppSidebar / AdminSidebar in the web app).
+function sidebar(parent, role, active) {
+  const nav = NAV[role];
+  const s = box({ name: "Sidebar", gap: 4, p: [20, 12, 20, 12], fill: "surface", w: SIDEBAR_W });
+  if (wf()) {
+    s.strokes = paint("line");
+    s.strokeRightWeight = 1;
+    s.strokeLeftWeight = 0;
+    s.strokeTopWeight = 0;
+    s.strokeBottomWeight = 0;
+  }
+  put(parent, s, { fillH: true });
+  const top = box({ name: "Brand", dir: "h", gap: 10, cross: "CENTER", p: [0, 8, 20, 8] });
+  put(s, top, { fillW: true });
+  brandMark(top, 40);
+  const tt = box({ name: "Name" });
+  put(top, tt, { grow: true });
+  text(tt, "แจ้งซ่อม มช.", { size: 15, w: "b", lh: 130 });
+  text(tt, nav.sub, { size: 12, c: "muted", lh: 130 });
+  if (nav.cta) {
+    button(s, nav.cta[0], { icon: "plus", block: true, to: nav.cta[1] });
+    spacer(s, 12);
+  }
+  nav.items.forEach(function (it) {
+    const on = it[0] === active;
+    const row = box({ name: "Nav/" + it[2], dir: "h", gap: 12, p: [0, 12], h: 44, r: 12, cross: "CENTER", fill: on ? "brandSoft" : null });
+    put(s, row, { fillW: true });
+    icon(row, it[1], 20, on ? "brand" : "ink");
+    text(row, it[2], { size: 15, w: "sb", c: on ? "brand" : "ink", grow: true });
+    if (it[4]) navBadge(row, it[4]);
+    link(row, it[3]);
+  });
+  const fill = box({ name: "Fill" });
+  put(s, fill, { fillW: true });
+  fill.layoutGrow = 1;
+  const foot = box({ name: "Account", gap: 4, p: [12, 8, 0, 8] });
+  foot.strokes = paint("line");
+  foot.strokeTopWeight = 1;
+  foot.strokeBottomWeight = 0;
+  foot.strokeLeftWeight = 0;
+  foot.strokeRightWeight = 0;
+  put(s, foot, { fillW: true });
+  text(foot, nav.person, { size: 14, w: "sb" });
+  const out = box({ name: "Logout", dir: "h", gap: 10, h: 40, cross: "CENTER" });
+  put(foot, out, { fillW: true });
+  icon(out, "log-out", 18, "redI");
+  text(out, "ออกจากระบบ", { size: 15, w: "sb", c: "redI" });
+  link(out, nav.logout);
+  return s;
+}
+
+// Mobile admin navigation: a top bar (the web app's AdminSidebar collapses to this under 768 px).
+function adminTopBar(f, active) {
+  const bar = box({ name: "Admin top bar", dir: "h", gap: 4, p: [8, 12], fill: "surface", cross: "CENTER", clip: true });
+  bar.strokes = paint("line");
+  bar.strokeBottomWeight = 1;
+  bar.strokeTopWeight = 0;
+  bar.strokeLeftWeight = 0;
+  bar.strokeRightWeight = 0;
+  put(f, bar, { fillW: true });
+  brandMark(bar, 36);
+  spacer4(bar);
+  NAV.admin.items.forEach(function (it) {
+    const on = it[0] === active;
+    const item = box({ name: "Nav/" + it[2], dir: "h", gap: 6, p: [0, 10], h: 44, r: 12, cross: "CENTER", fill: on ? "brandSoft" : null });
+    icon(item, it[1], 18, on ? "brand" : "ink");
+    text(item, it[2], { size: 14, w: "sb", c: on ? "brand" : "ink" });
+    if (it[4]) navBadge(item, it[4]);
+    bar.appendChild(item);
+    link(item, it[3]);
+  });
+  const out = box({ name: "Logout", main: "CENTER", cross: "CENTER", w: 44, h: 44, r: 12 });
+  icon(out, "log-out", 18, "redI");
+  bar.appendChild(out);
+  link(out, "A00");
+  return bar;
+}
+
+function spacer4(parent) {
+  const f = box({ name: "Gap", w: 4, h: 4 });
+  parent.appendChild(f);
+}
+
+// Mobile bottom action bar of the request form.
+function formActionBar(f, label, to) {
+  const a = box({ name: "Action bar", p: [12, 20, 28, 20], fill: "page" });
+  put(f, a, { fillW: true });
+  button(a, label, { size: "lg", block: true, to: to });
+  return a;
+}
+
+// Bottom sheet (mobile) or floating dialog (desktop) over a dimmed copy of the base screen.
+function sheetScreen(key, title, baseKey, build, o) {
+  o = o || {};
+  const W = isD() ? DW : MW;
+  const H = isD() ? DH : MH;
+  const base = SCREENS[K(baseKey)];
   const f = figma.createFrame();
-  f.name = key + " · " + title + " (sheet)";
-  f.resize(MW, MH);
+  f.name = K(key) + " · " + title + " (sheet)";
+  f.resize(W, H);
   f.fills = paint("page");
   f.clipsContent = true;
   const bg = base.clone();
@@ -753,20 +960,28 @@ function sheetScreen(key, title, base, build) {
   bg.name = "Background · " + base.name;
   const dim = figma.createRectangle();
   dim.name = "Backdrop";
-  dim.resize(MW, MH);
+  dim.resize(W, H);
   dim.fills = paint("backdrop", 0.35);
   f.appendChild(dim);
-  const sheet = box({ name: "Bottom sheet", gap: 14, p: [8, 20, 28, 20], fill: "page", w: MW });
-  sheet.topLeftRadius = radius(20);
-  sheet.topRightRadius = radius(20);
+  const sw = isD() ? (o.wide ? 560 : 440) : MW;
+  const sheet = box({ name: "Bottom sheet", gap: 14, p: [isD() ? 20 : 8, 20, isD() ? 24 : 28, 20], fill: "page", w: sw });
+  if (isD()) {
+    sheet.cornerRadius = radius(20);
+    shadow(sheet, 12, 40, 0.18);
+  } else {
+    sheet.topLeftRadius = radius(20);
+    sheet.topRightRadius = radius(20);
+  }
   f.appendChild(sheet);
-  const grab = box({ name: "Grabber", dir: "h", main: "CENTER" });
-  put(sheet, grab, { fillW: true });
-  rect(grab, 36, 4, "fillStrong", 2);
+  if (!isD()) {
+    const grab = box({ name: "Grabber", dir: "h", main: "CENTER" });
+    put(sheet, grab, { fillW: true });
+    rect(grab, 36, 4, "fillStrong", 2);
+  }
   build(sheet);
-  sheet.x = 0;
-  sheet.y = MH - sheet.height;
-  SCREENS[key] = f;
+  sheet.x = isD() ? Math.round((W - sw) / 2) : 0;
+  sheet.y = H - sheet.height - (isD() ? 24 : 0);
+  SCREENS[K(key)] = f;
   return f;
 }
 
@@ -904,7 +1119,14 @@ function timeline(parent, steps, currentTone) {
   return list;
 }
 
-const LOC = "อาคาร CAMT · ชั้น 3 · ห้อง 301";
+const CAMT = "CAMT วิทยาลัยศิลปะ สื่อ และเทคโนโลยี";
+const LOC = CAMT + " · ชั้น 3 · CAMT301";
+const LOC_RB5 = "RB5 อาคารเรียนรวม 5 · ชั้น 2 · RB5202";
+const LOC_RB5_1 = "RB5 อาคารเรียนรวม 5 · ชั้น 1 · RB5103";
+const LOC_LIB = "สำนักหอสมุด (Main Library) · ชั้น 1 · ห้องน้ำ";
+const LOC_ILC = "ILC-A ห้องเรียน Active Learning · ชั้น 2 · ILC-A204";
+const LOC_HB7 = "HB7 คณะมนุษยศาสตร์ (8 ชั้น) · ชั้น 4 · HB7402";
+const LOC_DORM = "หอพักนักศึกษาหญิง 3 · ชั้น 1 · ห้องน้ำรวม";
 const DESC = "แอร์เปิดแล้วไม่เย็น มีน้ำหยดลงโต๊ะแถวที่ 3 เริ่มเป็นตั้งแต่เมื่อวาน";
 
 function problemSection(parent, o) {
@@ -921,7 +1143,7 @@ function problemSection(parent, o) {
 }
 
 // ---------------------------------------------------------------------------
-// Reporter screens
+// Login (one per section, so every flow starts and ends inside its own section)
 // ---------------------------------------------------------------------------
 
 function logo(parent, inverted) {
@@ -937,25 +1159,69 @@ function logo(parent, inverted) {
   return row;
 }
 
-function R01() {
-  const f = mobileScreen("R01", "เข้าสู่ระบบ");
-  const b = body(f, { p: [32, 20, 32, 20], gap: 16 });
-  logo(b);
-  spacer(b, 8);
+function loginForm(b, next, forgot, user, withLogo) {
+  if (withLogo) {
+    logo(b);
+    spacer(b, 8);
+  }
   text(b, "มีอะไรเสีย บอกเราได้เลย", { size: 28, w: "b", fillW: true, lh: 130 });
   text(b, "เข้าสู่ระบบด้วย CMU Account เพื่อแจ้งซ่อมและติดตามงาน", { size: 15, c: "muted", fillW: true });
   spacer(b, 8);
-  input(b, { label: "CMU Account", value: "anan.s", suffix: "@cmu.ac.th" });
+  input(b, { label: "CMU Account", value: user, suffix: "@cmu.ac.th" });
   input(b, { label: "รหัสผ่าน", value: "••••••••", trailing: "eye" });
   const fr = box({ name: "Forgot", dir: "h", main: "MAX" });
   put(b, fr, { fillW: true });
-  linkText(fr, "ลืมรหัสผ่าน?", "R01b", { size: 14 });
-  button(b, "เข้าสู่ระบบ", { size: "lg", block: true, to: "R02" });
-  return finishMobile(f);
+  linkText(fr, "ลืมรหัสผ่าน?", forgot, { size: 14 });
+  button(b, "เข้าสู่ระบบ", { size: "lg", block: true, to: next });
 }
 
+function loginScreen(key, next, forgot, user) {
+  if (!isD()) {
+    const s = screen(key, "เข้าสู่ระบบ", {});
+    const b = body(s.col, { p: [32, 20, 32, 20], gap: 16 });
+    loginForm(b, next, forgot, user, true);
+    return finish(s);
+  }
+  const f = box({ name: K(key) + " · เข้าสู่ระบบ", dir: "h", fill: "page", clip: true, cross: "MIN", w: DW });
+  SCREENS[K(key)] = f;
+  const left = box({ name: "Brand panel", gap: 44, p: [56, 56], fill: "brand", main: "CENTER", w: 720 });
+  put(f, left, { fillH: true });
+  logo(left, true);
+  const pitch = box({ name: "Pitch", gap: 24, w: 460 });
+  left.appendChild(pitch);
+  text(pitch, "เจออะไรเสียในมหาวิทยาลัย แจ้งได้ในไม่ถึง 3 นาที", { size: 36, w: "b", c: "#FFFFFF", fillW: true, lh: 130 });
+  [
+    ["camera", "ถ่ายรูปจุดที่เสีย", "แนบได้สูงสุด 3 รูป ระบบย่อขนาดให้เอง"],
+    ["map-pin", "เลือกอาคารและห้อง", "ช่างรู้ตำแหน่งแน่นอนโดยไม่ต้องโทรถาม"],
+    ["bell", "ติดตามได้ทุกขั้นตอน", "แจ้งเตือนทันทีเมื่อรับเรื่อง มอบหมายช่าง และซ่อมเสร็จ"],
+  ].forEach(function (st) {
+    const r = box({ name: "Step/" + st[1], dir: "h", gap: 16, cross: "MIN" });
+    put(pitch, r, { fillW: true });
+    const tile = box({ name: "Icon", main: "CENTER", cross: "CENTER", w: 44, h: 44, r: 12, fill: "#FFFFFF", op: 0.15 });
+    icon(tile, st[0], 20, "#FFFFFF");
+    r.appendChild(tile);
+    const t = box({ name: "Text", gap: 2 });
+    put(r, t, { grow: true });
+    text(t, st[1], { size: 16, w: "sb", c: "#FFFFFF" });
+    text(t, st[2], { size: 14, c: "#E9DFF2", fillW: true });
+  });
+  const right = box({ name: "Form panel", main: "CENTER", cross: "CENTER", p: 40 });
+  put(f, right, { grow: true, fillH: true });
+  const col = box({ name: "Form", gap: 16, w: 400 });
+  right.appendChild(col);
+  CUR_W = 400;
+  loginForm(col, next, forgot, user, false);
+  f.counterAxisSizingMode = "FIXED";
+  f.resize(DW, DH);
+  return f;
+}
+
+// ---------------------------------------------------------------------------
+// Reporter screens
+// ---------------------------------------------------------------------------
+
 function R01b() {
-  return sheetScreen("R01b", "ลืมรหัสผ่าน", SCREENS.R01, function (s) {
+  return sheetScreen("R01b", "ลืมรหัสผ่าน", "R01", function (s) {
     sheetHeader(s, "ลืมรหัสผ่าน?", null, "R01");
     text(s, "กรุณาติดต่อ ITSC มช. เพื่อรีเซ็ตรหัสผ่าน", { size: 15, fillW: true });
     text(s, "ระบบแจ้งซ่อมใช้ CMU Account เดียวกับบริการอื่นของมหาวิทยาลัย จึงไม่สามารถรีเซ็ตรหัสผ่านจากที่นี่ได้", { size: 14, c: "muted", fillW: true });
@@ -964,8 +1230,8 @@ function R01b() {
 }
 
 function R02() {
-  const f = mobileScreen("R02", "ตั้งค่าโปรไฟล์ครั้งแรก");
-  const b = body(f, { p: [24, 20, 32, 20], gap: 18 });
+  const s = screen("R02", "ตั้งค่าโปรไฟล์ครั้งแรก", { colW: 640, center: true });
+  const b = body(s.col, { p: [24, 20, 32, 20], gap: 18 });
   const h = box({ name: "Intro", gap: 4 });
   put(b, h, { fillW: true });
   text(h, "ขั้นตอนเดียวก่อนเริ่ม", { size: 14, w: "sb", c: "brand" });
@@ -991,22 +1257,23 @@ function R02() {
   checkbox(ck, true);
   text(ck, "ฉันยอมรับการเก็บและใช้ข้อมูลตามที่ระบุ", { size: 15, w: "m", grow: true });
   button(b, "บันทึกและเริ่มใช้งาน", { size: "lg", block: true, to: "R03" });
-  return finishMobile(f);
+  return finish(s);
 }
 
 function R03() {
-  const f = mobileScreen("R03", "หน้าแรก");
-  const head = box({ name: "Header", dir: "h", gap: 12, cross: "CENTER", p: [16, 20, 4, 20] });
-  put(f, head, { fillW: true });
+  const s = screen("R03", "หน้าแรก", { role: "reporter", nav: "home", tabs: true, colW: DESK_W });
+  const head = box({ name: "Header", dir: "h", gap: 12, cross: "CENTER", p: hp([16, 20, 4, 20]) });
+  put(s.col, head, { fillW: true });
   const ht = box({ name: "Greeting", gap: 0 });
   put(head, ht, { grow: true });
   text(ht, "สวัสดีตอนบ่าย", { size: 15, c: "muted" });
   text(ht, "คุณอนันต์", { size: 28, w: "b", lh: 130 });
   bellButton(head, 2, "R14");
 
-  const b = body(f, { p: [16, 20, 24, 20], gap: 22 });
+  const b = body(s.col, { p: [16, 20, 24, 20], gap: 22 });
+  const cols = twoCols(b, 552);
   const act = box({ name: "Active request", gap: 8 });
-  put(b, act, { fillW: true });
+  put(cols[0], act, { fillW: true });
   sectionTitle(act, "งานที่กำลังดำเนินการ");
   const c = card(act, { r: 20, gap: 12 });
   link(c, "R10");
@@ -1022,45 +1289,38 @@ function R03() {
   put(c, mid, { fillW: true });
   statusPill(mid, "assigned");
   text(mid, "อัปเดต 12 นาทีที่แล้ว", { size: 12, c: "muted" });
-  progressBar(c, 0.5, 318, "blueI");
+  progressBar(c, 0.5, (isD() ? 552 : CUR_W) - 32, "blueI");
   text(c, "ขั้นที่ 3 จาก 6 · MR-2609-0042", { size: 12, c: "muted" });
 
-  const cta = card(b, { r: 20, p: 20, gap: 4 });
+  const cta = card(cols[0], { r: 20, p: 20, gap: 4 });
   text(cta, "มีอะไรเสีย บอกเราได้เลย", { size: 17, w: "b" });
   text(cta, "ถ่ายรูป เลือกสถานที่ ส่งเรื่องได้ในไม่ถึง 3 นาที", { size: 14, c: "muted", fillW: true });
   spacer(cta, 12);
   button(cta, "แจ้งซ่อม", { size: "lg", block: true, icon: "plus", to: "R04" });
 
   const rec = box({ name: "Recent", gap: 8 });
-  put(b, rec, { fillW: true });
+  put(cols[1], rec, { fillW: true });
   const rh = box({ name: "Title", dir: "h", main: "SPACE_BETWEEN", cross: "CENTER" });
   put(rec, rh, { fillW: true });
   text(rh, "คำร้องล่าสุด", { size: 17, w: "b" });
   linkText(rh, "ดูทั้งหมด", "R13");
   requestRows(rec, [
     { cat: "AirVent", loc: LOC, status: "assigned", code: "MR-2609-0042", time: "12 นาทีที่แล้ว", to: "R10" },
-    { cat: "Droplets", loc: "อาคารเรียนรวม · ชั้น 2 · ห้อง 202", status: "need_info", code: "MR-2609-0039", time: "1 วันที่แล้ว", to: "R10" },
-    { cat: "Zap", loc: "สำนักหอสมุด · ชั้น 1 · ห้อง 103", status: "closed", code: "MR-2609-0021", time: "6 วันที่แล้ว", to: "R10" },
+    { cat: "Droplets", loc: LOC_RB5, status: "need_info", code: "MR-2609-0039", time: "1 วันที่แล้ว", to: "R10" },
+    { cat: "Zap", loc: LOC_LIB, status: "closed", code: "MR-2609-0021", time: "6 วันที่แล้ว", to: "R10" },
   ]);
-  return finishMobile(f, ["reporter", "home"]);
+  return finish(s);
 }
 
 function formTop(parent, step, label, backLabel, backTo) {
-  const t = box({ name: "Form header", gap: 10, p: [8, 20, 12, 20], fill: "page" });
+  const t = box({ name: "Form header", gap: 10, p: hp([8, 20, 12, 20]), fill: "page" });
   put(parent, t, { fillW: true });
   const row = box({ name: "Row", dir: "h", main: "SPACE_BETWEEN", cross: "CENTER" });
   put(t, row, { fillW: true });
   linkText(row, backLabel, backTo, { icon: "chevron-left", iconSize: 22 });
   text(row, "ขั้นที่ " + step + "/4 · " + label, { size: 14, w: "sb", c: "muted" });
-  progressBar(t, step / 4, 350, "brand");
+  progressBar(t, step / 4, CUR_W, "brand");
   return t;
-}
-
-function formActions(f, label, to) {
-  const a = box({ name: "Action bar", p: [12, 20, 28, 20], fill: "page" });
-  put(f, a, { fillW: true });
-  button(a, label, { size: "lg", block: true, to: to });
-  return a;
 }
 
 function stepTitle(b, title, sub) {
@@ -1070,24 +1330,14 @@ function stepTitle(b, title, sub) {
   text(h, sub, { size: 15, c: "muted", fillW: true });
 }
 
-// Mobile screen whose action bar sits at the bottom of the phone height.
-function finishForm(f, actionLabel, to) {
-  const a = formActions(f, actionLabel, to);
-  if (f.height < MH) {
-    const sp = box({ name: "Fill" });
-    f.insertChild(f.children.length - 1, sp);
-    sp.layoutSizingHorizontal = "FILL";
-    f.primaryAxisSizingMode = "FIXED";
-    f.resize(MW, MH);
-    sp.layoutGrow = 1;
-  }
-  return a;
+function formScreen(key, title, action) {
+  return screen(key, title, { role: "reporter", colW: 720, center: true, action: action });
 }
 
 function R04() {
-  const f = mobileScreen("R04", "แจ้งซ่อม ขั้นที่ 1 ปัญหา");
-  formTop(f, 1, "ปัญหา", "ยกเลิก", "R03");
-  const b = body(f, { gap: 20 });
+  const s = formScreen("R04", "แจ้งซ่อม ขั้นที่ 1 ปัญหา", ["ถัดไป", "R05"]);
+  formTop(s.col, 1, "ปัญหา", "ยกเลิก", "R03");
+  const b = body(s.col, { gap: 20 });
   stepTitle(b, "เกิดปัญหาอะไร", "เลือกประเภทที่ใกล้เคียงที่สุด");
   const list = groupList(b);
   const keys = Object.keys(CATEGORY);
@@ -1098,8 +1348,7 @@ function R04() {
   listRow(u, { label: "ไม่ด่วน", detail: "รอได้ ไม่กระทบการใช้งานมาก" });
   listRow(u, { label: "ปกติ", detail: "ใช้งานได้ไม่สะดวก ควรซ่อมในไม่กี่วัน", check: true });
   listRow(u, { label: "ด่วนมาก", detail: "อันตรายหรือกระทบคนจำนวนมาก", labelColor: "redI", bold: true, last: true });
-  finishForm(f, "ถัดไป", "R05");
-  return f;
+  return finish(s);
 }
 
 function crumb(parent, label, active) {
@@ -1111,31 +1360,30 @@ function crumb(parent, label, active) {
 }
 
 function R05() {
-  const f = mobileScreen("R05", "แจ้งซ่อม ขั้นที่ 2 สถานที่");
-  formTop(f, 2, "สถานที่", "ย้อนกลับ", "R04");
-  const b = body(f, { gap: 18 });
+  const s = formScreen("R05", "แจ้งซ่อม ขั้นที่ 2 สถานที่", ["ถัดไป", "R06"]);
+  formTop(s.col, 2, "สถานที่", "ย้อนกลับ", "R04");
+  const b = body(s.col, { gap: 18 });
   stepTitle(b, "พบปัญหาที่ไหน", "เลือกทีละขั้นจนถึงห้อง");
-  const cr = box({ name: "Breadcrumbs", dir: "h", gap: 4, cross: "CENTER" });
+  const cr = box({ name: "Breadcrumbs", dir: "h", gap: 4, cross: "CENTER", clip: true });
   put(b, cr, { fillW: true });
   crumb(cr, "วิทยาเขต");
   icon(cr, "chevron-right", 14, "muted");
   crumb(cr, "สวนสัก");
   icon(cr, "chevron-right", 14, "muted");
-  crumb(cr, "อาคาร CAMT");
+  crumb(cr, CAMT);
   icon(cr, "chevron-right", 14, "muted");
   crumb(cr, "ชั้น 3", true);
   const list = groupList(b, "ห้อง");
-  listRow(list, { label: "ห้อง 301", check: true, to: "R05b" });
-  listRow(list, { label: "ห้อง 302" });
-  listRow(list, { label: "ห้อง 303" });
-  listRow(list, { label: "ห้อง 304", last: true });
+  listRow(list, { label: "CAMT301", check: true, to: "R05b" });
+  listRow(list, { label: "CAMT302" });
+  listRow(list, { label: "Lab Game" });
+  listRow(list, { label: "Lab Animation", last: true });
   input(b, { label: "จุดสังเกตเพิ่มเติม", optional: true, value: "เครื่องฝั่งหน้าต่าง" });
-  finishForm(f, "ถัดไป", "R06");
-  return f;
+  return finish(s);
 }
 
 function R05b() {
-  return sheetScreen("R05b", "มีคนแจ้งปัญหานี้แล้ว", SCREENS.R05, function (s) {
+  return sheetScreen("R05b", "มีคนแจ้งปัญหานี้แล้ว", "R05", function (s) {
     sheetHeader(s, "มีคนแจ้งปัญหานี้แล้ว", "ห้องและประเภทปัญหาเดียวกันยังอยู่ระหว่างดำเนินการ", "R05");
     const c = card(s, { gap: 10 });
     const top = box({ name: "Top", dir: "h", gap: 12, cross: "CENTER" });
@@ -1157,9 +1405,9 @@ function R05b() {
 }
 
 function R06() {
-  const f = mobileScreen("R06", "แจ้งซ่อม ขั้นที่ 3 รายละเอียด");
-  formTop(f, 3, "รายละเอียด", "ย้อนกลับ", "R05");
-  const b = body(f, { gap: 20 });
+  const s = formScreen("R06", "แจ้งซ่อม ขั้นที่ 3 รายละเอียด", ["ถัดไป", "R07"]);
+  formTop(s.col, 3, "รายละเอียด", "ย้อนกลับ", "R05");
+  const b = body(s.col, { gap: 20 });
   stepTitle(b, "เล่าให้ช่างฟังหน่อย", "รายละเอียดและรูปช่วยให้ช่างเตรียมอุปกรณ์มาถูก");
   const d = input(b, { label: "รายละเอียดปัญหา", value: DESC, multiline: true, focus: true });
   const cnt = box({ name: "Counter", dir: "h", main: "MAX" });
@@ -1171,8 +1419,7 @@ function R06() {
   photoGrid(ph, 2, 110, { addTile: "2/3", uploadingIndex: 1 });
   button(ph, "ถ่ายรูปด้วยกล้อง", { v: "secondary", block: true, icon: "camera" });
   text(ph, "JPG หรือ PNG ไม่เกิน 10 MB ต่อรูป ระบบจะย่อขนาดให้อัตโนมัติ", { size: 13, c: "muted", fillW: true });
-  finishForm(f, "ถัดไป", "R07");
-  return f;
+  return finish(s);
 }
 
 function reviewBlock(parent, title, editTo, build) {
@@ -1187,9 +1434,9 @@ function reviewBlock(parent, title, editTo, build) {
 }
 
 function R07() {
-  const f = mobileScreen("R07", "แจ้งซ่อม ขั้นที่ 4 ตรวจสอบ");
-  formTop(f, 4, "ตรวจสอบ", "ย้อนกลับ", "R06");
-  const b = body(f, { gap: 16 });
+  const s = formScreen("R07", "แจ้งซ่อม ขั้นที่ 4 ตรวจสอบ", ["ส่งคำร้อง", "R08"]);
+  formTop(s.col, 4, "ตรวจสอบ", "ย้อนกลับ", "R06");
+  const b = body(s.col, { gap: 16 });
   stepTitle(b, "ตรวจสอบก่อนส่ง", "แตะ “แก้ไข” เพื่อกลับไปเปลี่ยนข้อมูล");
   reviewBlock(b, "ปัญหา", "R04", function (c) {
     const r = box({ name: "Row", dir: "h", gap: 12, cross: "CENTER" });
@@ -1214,13 +1461,12 @@ function R07() {
     text(c, DESC, { size: 15, fillW: true, lh: 160 });
     photoGrid(c, 2, 96);
   });
-  finishForm(f, "ส่งคำร้อง", "R08");
-  return f;
+  return finish(s);
 }
 
 function R08() {
-  const f = mobileScreen("R08", "ส่งคำร้องสำเร็จ");
-  const b = body(f, { p: [120, 24, 24, 24], gap: 6 });
+  const s = screen("R08", "ส่งคำร้องสำเร็จ", { role: "reporter", colW: 480, center: true });
+  const b = body(s.col, { p: [isD() ? 80 : 120, 24, 24, 24], gap: 6 });
   b.counterAxisAlignItems = "CENTER";
   const ring = circle(b, 96, "greenT", { stroke: "greenI", sw: 5 });
   icon(ring, "check", 48, "greenI", { sw: 3 });
@@ -1232,18 +1478,24 @@ function R08() {
   spacer(b, 24);
   button(b, "ติดตามสถานะ", { size: "lg", block: true, to: "R09" });
   button(b, "กลับหน้าแรก", { size: "lg", v: "secondary", block: true, to: "R03" });
-  return finishMobile(f);
+  return finish(s);
 }
 
 const FLOW = ["ส่งคำร้อง · รอรับเรื่อง", "รับเรื่องแล้ว", "มอบหมายช่างแล้ว", "กำลังซ่อม", "ซ่อมเสร็จ รอยืนยัน", "ปิดงาน"];
 
+function trackScreen(key, title) {
+  const s = screen(key, title, { role: "reporter", nav: "history", tabs: true, colW: DESK_W });
+  pageHeader(s.col, { title: "ติดตามสถานะ", back: ["ประวัติ", "R13"], bell: [2, "R14"] });
+  const b = body(s.col, { p: [12, 20, 24, 20], gap: 18 });
+  const cols = twoCols(b, DESK_W - 24 - 400);
+  return { s: s, L: cols[0], R: cols[1] };
+}
+
 function R09() {
-  const f = mobileScreen("R09", "ติดตามสถานะ รอรับเรื่อง");
-  pageHeader(f, { title: "ติดตามสถานะ", back: ["ประวัติ", "R13"], bell: [2, "R14"] });
-  const b = body(f, { p: [12, 20, 24, 20], gap: 18 });
-  requestHeaderCard(b, { cat: "AirVent", code: "MR-2609-0042", loc: LOC, status: "pending" });
-  button(b, "ยกเลิกคำร้อง", { v: "danger", block: true, to: "R09b" });
-  detailSection(b, "ความคืบหน้า", function (c) {
+  const t = trackScreen("R09", "ติดตามสถานะ รอรับเรื่อง");
+  requestHeaderCard(t.L, { cat: "AirVent", code: "MR-2609-0042", loc: LOC, status: "pending" });
+  button(t.R, "ยกเลิกคำร้อง", { v: "danger", block: true, to: "R09b" });
+  detailSection(t.R, "ความคืบหน้า", function (c) {
     timeline(
       c,
       FLOW.map(function (l, i) {
@@ -1252,12 +1504,12 @@ function R09() {
       "gray",
     );
   });
-  problemSection(b);
-  return finishMobile(f, ["reporter", "history"]);
+  problemSection(t.L);
+  return finish(t.s);
 }
 
 function R09b() {
-  return sheetScreen("R09b", "ยกเลิกคำร้อง", SCREENS.R09, function (s) {
+  return sheetScreen("R09b", "ยกเลิกคำร้อง", "R09", function (s) {
     sheetHeader(s, "ยกเลิกคำร้องนี้?", "MR-2609-0042 จะไม่ถูกส่งต่อให้ช่าง และยกเลิกแล้วย้อนกลับไม่ได้", "R09");
     button(s, "ยืนยันยกเลิก", { size: "lg", v: "danger", block: true, to: "R13" });
     button(s, "ไม่ยกเลิก", { size: "lg", v: "secondary", block: true, to: "R09" });
@@ -1265,20 +1517,18 @@ function R09b() {
 }
 
 function R10() {
-  const f = mobileScreen("R10", "ติดตามสถานะ ซ่อมเสร็จ รอยืนยัน");
-  pageHeader(f, { title: "ติดตามสถานะ", back: ["ประวัติ", "R13"], bell: [2, "R14"] });
-  const b = body(f, { p: [12, 20, 24, 20], gap: 18 });
-  requestHeaderCard(b, { cat: "AirVent", code: "MR-2609-0042", loc: LOC, status: "completed" });
-  const c = card(b, { gap: 6 });
+  const t = trackScreen("R10", "ติดตามสถานะ ซ่อมเสร็จ รอยืนยัน");
+  requestHeaderCard(t.L, { cat: "AirVent", code: "MR-2609-0042", loc: LOC, status: "completed" });
+  const c = card(t.R, { gap: 6 });
   text(c, "ช่างแจ้งว่าซ่อมเสร็จแล้ว", { size: 17, w: "b" });
   text(c, "ลองตรวจดูหน้างาน แล้วบอกเราว่าใช้งานได้ปกติหรือยัง", { size: 14, c: "muted", fillW: true });
   spacer(c, 8);
   const btns = box({ name: "Buttons", dir: "h", gap: 8 });
   put(c, btns, { fillW: true });
-  button(btns, "ยืนยันว่าซ่อมเสร็จ", { size: "lg", grow: true, to: "R11" });
-  button(btns, "ยังไม่หาย", { size: "lg", v: "secondary", grow: true, to: "R12" });
+  button(btns, "ยืนยันว่าซ่อมเสร็จ", { size: isD() ? "md" : "lg", grow: true, to: "R11" });
+  button(btns, "ยังไม่หาย", { size: isD() ? "md" : "lg", v: "secondary", grow: true, to: "R12" });
   text(c, "ระบบจะปิดงานอัตโนมัติใน 3 วัน", { size: 13, c: "muted", align: "CENTER", fillW: true });
-  detailSection(b, "ความคืบหน้า", function (cc) {
+  detailSection(t.R, "ความคืบหน้า", function (cc) {
     timeline(
       cc,
       [
@@ -1300,15 +1550,15 @@ function R10() {
       "green",
     );
   });
-  problemSection(b);
-  detailSection(b, "ช่างผู้รับผิดชอบ", function (cc) {
+  problemSection(t.L);
+  detailSection(t.L, "ช่างผู้รับผิดชอบ", function (cc) {
     const r = box({ name: "Tech", dir: "h", gap: 12, cross: "CENTER" });
     put(cc, r, { fillW: true });
     const av = circle(r, 40, "blueT");
     icon(av, "wrench", 18, "blueI");
     text(r, "ช่างสมศักดิ์ ใจดี", { size: 15, w: "sb" });
   });
-  detailSection(b, "ผลการซ่อม", function (cc) {
+  detailSection(t.L, "ผลการซ่อม", function (cc) {
     text(cc, "สาเหตุ", { size: 13, c: "muted" });
     text(cc, "ท่อน้ำทิ้งแอร์ตัน และน้ำยาแอร์ต่ำ", { size: 15, fillW: true });
     text(cc, "อะไหล่ที่ใช้", { size: 13, c: "muted" });
@@ -1316,7 +1566,7 @@ function R10() {
     text(cc, "รูปหลังซ่อม", { size: 13, c: "muted" });
     photoGrid(cc, 1, 96);
   });
-  return finishMobile(f, ["reporter", "history"]);
+  return finish(t.s);
 }
 
 function stars(parent, filled, size) {
@@ -1327,7 +1577,7 @@ function stars(parent, filled, size) {
 }
 
 function R11() {
-  return sheetScreen("R11", "ให้คะแนน", SCREENS.R10, function (s) {
+  return sheetScreen("R11", "ให้คะแนน", "R10", function (s) {
     sheetHeader(s, "ให้คะแนนงานซ่อมครั้งนี้", "คะแนนช่วยให้ทีมช่างปรับปรุงบริการ", "R10");
     stars(s, 5, 40);
     text(s, "พอใจมาก", { size: 15, w: "sb", c: "muted", align: "CENTER", fillW: true });
@@ -1337,7 +1587,7 @@ function R11() {
 }
 
 function R12() {
-  return sheetScreen("R12", "ยังไม่หาย", SCREENS.R10, function (s) {
+  return sheetScreen("R12", "ยังไม่หาย", "R10", function (s) {
     sheetHeader(s, "ยังพบปัญหาอยู่?", "เราจะส่งเรื่องกลับให้เจ้าหน้าที่มอบหมายช่างอีกครั้ง", "R10");
     input(s, { label: "อาการที่ยังพบ", value: "แอร์เย็นได้ครึ่งชั่วโมงแล้วกลับมามีน้ำหยดอีก", multiline: true });
     button(s, "ส่งเรื่องกลับ", { size: "lg", block: true, to: "R13" });
@@ -1345,20 +1595,20 @@ function R12() {
 }
 
 function R13() {
-  const f = mobileScreen("R13", "ประวัติ");
-  pageHeader(f, { title: "ประวัติ", subtitle: "คำร้องที่คุณแจ้งและติดตาม", large: true });
-  const b = body(f, { p: [12, 20, 24, 20], gap: 14 });
+  const s = screen("R13", "ประวัติ", { role: "reporter", nav: "history", tabs: true, colW: 820 });
+  pageHeader(s.col, { title: "ประวัติ", subtitle: "คำร้องที่คุณแจ้งและติดตาม", large: true });
+  const b = body(s.col, { p: [12, 20, 24, 20], gap: 14 });
   input(b, { placeholder: "ค้นหาเลขคำร้องหรือสถานที่", leading: "search" });
-  segmented(b, ["ทั้งหมด|6", "กำลังดำเนินการ|3", "เสร็จสิ้น|2", "ยกเลิก|1"], 0, { hug: true });
+  segmented(b, ["ทั้งหมด|6", "กำลังดำเนินการ|3", "เสร็จสิ้น|2", "ยกเลิก|1"], 0, { hug: !isD() });
   requestRows(b, [
     { cat: "AirVent", loc: LOC, status: "completed", code: "MR-2609-0042", time: "20 นาทีที่แล้ว", to: "R10" },
-    { cat: "Droplets", loc: "อาคารเรียนรวม · ชั้น 2 · ห้อง 202", status: "need_info", code: "MR-2609-0039", time: "1 วันที่แล้ว", to: "R10" },
-    { cat: "Monitor", loc: "อาคาร CAMT · ชั้น 4 · ห้อง 402", status: "in_progress", code: "MR-2609-0035", time: "2 วันที่แล้ว", to: "R10", follow: true },
-    { cat: "Zap", loc: "สำนักหอสมุด · ชั้น 1 · ห้อง 103", status: "closed", code: "MR-2609-0021", time: "6 วันที่แล้ว", to: "R10", repeat: "R04" },
-    { cat: "Armchair", loc: "อาคารเรียนรวม · ชั้น 3 · ห้อง 305", status: "closed", code: "MR-2608-0118", time: "3 สัปดาห์ที่แล้ว", to: "R10", repeat: "R04" },
-    { cat: "Building2", loc: "หอพักนักศึกษา 5 · ชั้น 2 · ห้อง 204", status: "cancelled", code: "MR-2608-0102", time: "1 เดือนที่แล้ว", to: "R10" },
+    { cat: "Droplets", loc: LOC_RB5, status: "need_info", code: "MR-2609-0039", time: "1 วันที่แล้ว", to: "R10" },
+    { cat: "Monitor", loc: LOC_ILC, status: "in_progress", code: "MR-2609-0035", time: "2 วันที่แล้ว", to: "R10", follow: true },
+    { cat: "Zap", loc: LOC_LIB, status: "closed", code: "MR-2609-0021", time: "6 วันที่แล้ว", to: "R10", repeat: "R04" },
+    { cat: "Armchair", loc: LOC_HB7, status: "closed", code: "MR-2608-0118", time: "3 สัปดาห์ที่แล้ว", to: "R10", repeat: "R04" },
+    { cat: "Building2", loc: LOC_DORM, status: "cancelled", code: "MR-2608-0102", time: "1 เดือนที่แล้ว", to: "R10" },
   ]);
-  return finishMobile(f, ["reporter", "history"]);
+  return finish(s);
 }
 
 const NOTIF_ICON = {
@@ -1397,9 +1647,9 @@ function notifList(parent, items) {
 }
 
 function R14() {
-  const f = mobileScreen("R14", "แจ้งเตือน");
-  pageHeader(f, { title: "แจ้งเตือน", large: true });
-  const b = body(f, { p: [4, 20, 24, 20], gap: 8 });
+  const s = screen("R14", "แจ้งเตือน", { role: "reporter", nav: "notif", tabs: true, colW: 820 });
+  pageHeader(s.col, { title: "แจ้งเตือน", large: true });
+  const b = body(s.col, { p: [4, 20, 24, 20], gap: 8 });
   const r = box({ name: "Actions", dir: "h", main: "MAX" });
   put(b, r, { fillW: true });
   linkText(r, "อ่านทั้งหมดแล้ว", null, { size: 14 });
@@ -1410,13 +1660,13 @@ function R14() {
     { kind: "submitted", title: "ส่งคำร้องแล้ว", body: "เราได้รับคำร้อง MR-2609-0042 แล้ว จะแจ้งให้ทราบเมื่อมีความคืบหน้า", time: "2 วัน", to: "R10" },
     { kind: "closed", title: "ปิดงานแล้ว", body: "คำร้อง MR-2609-0021 ปิดงานเรียบร้อย ขอบคุณที่แจ้งเข้ามา", time: "6 วัน", to: "R10" },
   ]);
-  return finishMobile(f, ["reporter", "notif"]);
+  return finish(s);
 }
 
 function R15() {
-  const f = mobileScreen("R15", "โปรไฟล์");
-  pageHeader(f, { title: "โปรไฟล์", subtitle: "anan.s@cmu.ac.th", large: true });
-  const b = body(f, { p: [16, 20, 24, 20], gap: 18 });
+  const s = screen("R15", "โปรไฟล์", { role: "reporter", nav: "profile", tabs: true, colW: 820 });
+  pageHeader(s.col, { title: "โปรไฟล์", subtitle: "anan.s@cmu.ac.th", large: true });
+  const b = body(s.col, { p: [16, 20, 24, 20], gap: 18 });
   input(b, { label: "ชื่อ-นามสกุล", value: "อนันต์ ศรีวงศ์" });
   const st = box({ name: "Field/สถานะ", gap: 6 });
   put(b, st, { fillW: true });
@@ -1430,7 +1680,7 @@ function R15() {
   icon(pd, "shield", 16, "greenI");
   text(pd, "ยอมรับเงื่อนไข PDPA เมื่อ 17 ก.ย. 69", { size: 13, c: "muted" });
   button(b, "ออกจากระบบ", { v: "danger", block: true, icon: "log-out", to: "R01" });
-  return finishMobile(f, ["reporter", "profile"]);
+  return finish(s);
 }
 
 // ---------------------------------------------------------------------------
@@ -1438,22 +1688,22 @@ function R15() {
 // ---------------------------------------------------------------------------
 
 function T01() {
-  const f = mobileScreen("T01", "งานของฉัน");
-  const head = box({ name: "Header", dir: "h", gap: 12, cross: "CENTER", p: [16, 20, 4, 20] });
-  put(f, head, { fillW: true });
+  const s = screen("T01", "งานของฉัน", { role: "tech", nav: "jobs", tabs: true, colW: 900 });
+  const head = box({ name: "Header", dir: "h", gap: 12, cross: "CENTER", p: hp([16, 20, 4, 20]) });
+  put(s.col, head, { fillW: true });
   const ht = box({ name: "Titles", gap: 0 });
   put(head, ht, { grow: true });
   text(ht, "ช่างสมศักดิ์", { size: 15, c: "muted" });
   text(ht, "งานของฉัน", { size: 28, w: "b", lh: 130 });
   text(ht, "มีงานใหม่รอรับ 2 งาน", { size: 14, c: "muted" });
   bellButton(head, 1, "T04");
-  const b = body(f, { p: [16, 20, 24, 20], gap: 14 });
-  segmented(b, ["งานใหม่|2", "กำลังทำ|1", "รออะไหล่|1", "เสร็จแล้ว|5"], 0, { hug: true });
+  const b = body(s.col, { p: [16, 20, 24, 20], gap: 14 });
+  segmented(b, ["งานใหม่|2", "กำลังทำ|1", "รออะไหล่|1", "เสร็จแล้ว|5"], 0, { hug: !isD() });
   requestRows(b, [
     { cat: "AirVent", urgency: "normal", loc: LOC, status: "assigned", code: "MR-2609-0042", time: "10 นาทีที่แล้ว", to: "T02" },
-    { cat: "Zap", urgency: "urgent", loc: "อาคารเรียนรวม · ชั้น 1 · ห้อง 105", status: "assigned", code: "MR-2609-0041", time: "35 นาทีที่แล้ว", to: "T02" },
+    { cat: "Zap", urgency: "urgent", loc: LOC_RB5_1, status: "assigned", code: "MR-2609-0041", time: "35 นาทีที่แล้ว", to: "T02" },
   ]);
-  return finishMobile(f, ["tech", "jobs"]);
+  return finish(s);
 }
 
 function reporterSection(parent) {
@@ -1473,16 +1723,33 @@ function reporterSection(parent) {
   });
 }
 
+function jobActions(parent, state) {
+  if (state === "assigned") button(parent, "รับงาน", { size: "lg", block: true, to: "T02b" });
+  if (state === "in_progress") {
+    const row = box({ name: "Buttons", dir: isD() ? "v" : "h", gap: 8 });
+    put(parent, row, { fillW: true });
+    button(row, "รออะไหล่", { size: "lg", v: "secondary", grow: !isD(), block: isD(), to: "T03w" });
+    button(row, "ซ่อมเสร็จแล้ว", { size: "lg", grow: !isD(), block: isD(), to: "T03" });
+  }
+  if (state === "waiting_parts") button(parent, "ได้อะไหล่แล้ว กลับไปซ่อมต่อ", { size: "lg", block: true, to: "T02b" });
+}
+
 // state: assigned | in_progress | waiting_parts
 function techDetail(key, state) {
   const titles = { assigned: "รายละเอียดงาน มอบหมายแล้ว", in_progress: "รายละเอียดงาน กำลังซ่อม", waiting_parts: "รายละเอียดงาน รออะไหล่" };
-  const f = mobileScreen(key, titles[state]);
-  pageHeader(f, { title: "รายละเอียดงาน", back: ["งานของฉัน", "T01"] });
-  const b = body(f, { p: [12, 20, 16, 20], gap: 18 });
-  requestHeaderCard(b, { cat: "AirVent", code: "MR-2609-0042", loc: LOC, status: state });
-  problemSection(b);
-  reporterSection(b);
-  detailSection(b, "ความคืบหน้า", function (c) {
+  const s = screen(key, titles[state], { role: "tech", nav: "jobs", tabs: true, colW: DESK_W });
+  pageHeader(s.col, { title: "รายละเอียดงาน", back: ["งานของฉัน", "T01"] });
+  const b = body(s.col, { p: [12, 20, 16, 20], gap: 18 });
+  const cols = twoCols(b, DESK_W - 24 - 400);
+  requestHeaderCard(cols[0], { cat: "AirVent", code: "MR-2609-0042", loc: LOC, status: state });
+  if (isD()) {
+    const a = card(cols[1], { gap: 8 });
+    text(a, "การดำเนินการ", { size: 13, w: "m", c: "muted" });
+    jobActions(a, state);
+  }
+  problemSection(cols[0]);
+  reporterSection(cols[0]);
+  detailSection(cols[1], "ความคืบหน้า", function (c) {
     const steps = [
       { label: FLOW[0], state: "done", time: "17 ก.ย. 69 14:30" },
       { label: FLOW[1], state: "done", time: "17 ก.ย. 69 15:02" },
@@ -1493,21 +1760,16 @@ function techDetail(key, state) {
     ];
     timeline(c, steps, state === "waiting_parts" ? "orange" : "blue");
   });
-  const a = box({ name: "Job actions", gap: 8, p: [12, 20, 16, 20], fill: "page" });
-  put(f, a, { fillW: true });
-  if (state === "assigned") button(a, "รับงาน", { size: "lg", block: true, to: "T02b" });
-  if (state === "in_progress") {
-    const row = box({ name: "Buttons", dir: "h", gap: 8 });
-    put(a, row, { fillW: true });
-    button(row, "รออะไหล่", { size: "lg", v: "secondary", grow: true, to: "T03w" });
-    button(row, "ซ่อมเสร็จแล้ว", { size: "lg", grow: true, to: "T03" });
+  if (!isD()) {
+    const a = box({ name: "Job actions", gap: 8, p: [12, 20, 16, 20], fill: "page" });
+    put(s.frame, a, { fillW: true });
+    jobActions(a, state);
   }
-  if (state === "waiting_parts") button(a, "ได้อะไหล่แล้ว กลับไปซ่อมต่อ", { size: "lg", block: true, to: "T02b" });
-  return finishMobile(f, ["tech", "jobs"]);
+  return finish(s);
 }
 
 function T03w() {
-  return sheetScreen("T03w", "รออะไหล่", SCREENS.T02b, function (s) {
+  return sheetScreen("T03w", "รออะไหล่", "T02b", function (s) {
     sheetHeader(s, "พักงานเพื่อรออะไหล่", "ผู้แจ้งจะเห็นสถานะ “รออะไหล่” พร้อมหมายเหตุนี้", "T02b");
     input(s, { label: "หมายเหตุ", value: "สั่งน้ำยาแอร์แล้ว คาดว่าได้พรุ่งนี้", multiline: true, minHeight: 80 });
     button(s, "ยืนยันรออะไหล่", { size: "lg", block: true, to: "T02c" });
@@ -1515,7 +1777,7 @@ function T03w() {
 }
 
 function T03() {
-  return sheetScreen("T03", "บันทึกงานซ่อมเสร็จ", SCREENS.T02b, function (s) {
+  return sheetScreen("T03", "บันทึกงานซ่อมเสร็จ", "T02b", function (s) {
     sheetHeader(s, "บันทึกงานซ่อมเสร็จ", "ผู้แจ้งจะได้รับแจ้งให้ตรวจสอบและยืนยัน", "T02b");
     const ph = box({ name: "Photos field", gap: 8 });
     put(s, ph, { fillW: true });
@@ -1528,29 +1790,29 @@ function T03() {
 }
 
 function T04() {
-  const f = mobileScreen("T04", "แจ้งเตือน ช่าง");
-  pageHeader(f, { title: "แจ้งเตือน", large: true });
-  const b = body(f, { p: [12, 20, 24, 20], gap: 8 });
+  const s = screen("T04", "แจ้งเตือน ช่าง", { role: "tech", nav: "notif", tabs: true, colW: 820 });
+  pageHeader(s.col, { title: "แจ้งเตือน", large: true });
+  const b = body(s.col, { p: [12, 20, 24, 20], gap: 8 });
   notifList(b, [
-    { kind: "job", title: "งานใหม่เข้ามา", body: "MR-2609-0042 · เครื่องปรับอากาศ · อาคาร CAMT ห้อง 301", time: "10 นาที", unread: true, to: "T02" },
-    { kind: "job", title: "งานใหม่เข้ามา", body: "MR-2609-0041 · ไฟฟ้า · อาคารเรียนรวม ห้อง 105", time: "35 นาที", to: "T02" },
-    { kind: "reopened", title: "ผู้แจ้งแจ้งว่ายังไม่หาย", body: "MR-2609-0017 · สำนักหอสมุด ห้อง 201 งานถูกส่งกลับให้เจ้าหน้าที่", time: "1 วัน", to: "T02" },
+    { kind: "job", title: "งานใหม่เข้ามา", body: "MR-2609-0042 · เครื่องปรับอากาศ · CAMT301", time: "10 นาที", unread: true, to: "T02" },
+    { kind: "job", title: "งานใหม่เข้ามา", body: "MR-2609-0041 · ไฟฟ้า · RB5 อาคารเรียนรวม 5 ห้อง RB5103", time: "35 นาที", to: "T02" },
+    { kind: "reopened", title: "ผู้แจ้งแจ้งว่ายังไม่หาย", body: "MR-2609-0017 · HB7 ห้อง HB7402 งานถูกส่งกลับให้เจ้าหน้าที่", time: "1 วัน", to: "T02" },
     { kind: "closed", title: "ผู้แจ้งยืนยันงานแล้ว", body: "MR-2609-0012 ปิดงานเรียบร้อย", time: "3 วัน", to: "T02" },
   ]);
-  return finishMobile(f, ["tech", "notif"]);
+  return finish(s);
 }
 
 function T05() {
-  const f = mobileScreen("T05", "โปรไฟล์ ช่าง");
-  pageHeader(f, { title: "โปรไฟล์", subtitle: "ช่างสมศักดิ์ ใจดี", large: true });
-  const b = body(f, { p: [16, 20, 24, 20], gap: 18 });
+  const s = screen("T05", "โปรไฟล์ ช่าง", { role: "tech", nav: "profile", tabs: true, colW: 820 });
+  pageHeader(s.col, { title: "โปรไฟล์", subtitle: "ช่างสมศักดิ์ ใจดี", large: true });
+  const b = body(s.col, { p: [16, 20, 24, 20], gap: 18 });
   const stats = box({ name: "Stats", dir: "h", gap: 10 });
   put(b, stats, { fillW: true });
-  [["2", "งานค้าง"], ["14", "เสร็จใน 30 วัน"], ["4.8", "คะแนนเฉลี่ย"]].forEach(function (s) {
-    const c = box({ name: "Stat/" + s[1], gap: 2, p: 14, fill: "surface", r: 16, stroke: wf() ? "line" : null });
+  [["2", "งานค้าง"], ["14", "เสร็จใน 30 วัน"], ["4.8", "คะแนนเฉลี่ย"]].forEach(function (st) {
+    const c = box({ name: "Stat/" + st[1], gap: 2, p: 14, fill: "surface", r: 16, stroke: wf() ? "line" : null });
     put(stats, c, { grow: true });
-    text(c, s[0], { size: 22, w: "b" });
-    text(c, s[1], { size: 13, c: "muted" });
+    text(c, st[0], { size: 22, w: "b" });
+    text(c, st[1], { size: 13, c: "muted" });
   });
   detailSection(b, "ความถนัด", function (c) {
     const p = box({ name: "Skills", dir: "h", gap: 8 });
@@ -1565,102 +1827,43 @@ function T05() {
     icon(r, "phone", 16, "muted");
     text(r, "089-111-2201", { size: 15 });
   });
-  button(b, "ออกจากระบบ", { v: "danger", block: true, icon: "log-out", to: "R01" });
-  return finishMobile(f, ["tech", "profile"]);
+  button(b, "ออกจากระบบ", { v: "danger", block: true, icon: "log-out", to: "T00" });
+  return finish(s);
 }
 
 // ---------------------------------------------------------------------------
-// Admin screens (desktop)
+// Admin screens
 // ---------------------------------------------------------------------------
 
-const DW = 1440;
-const DH = 900;
-const CONTENT_W = DW - 248 - 64;
-
-function desktopScreen(key, title, active) {
-  const f = box({ name: key + " · " + title, dir: "h", fill: "page", clip: true, cross: "MIN", w: DW });
-  SCREENS[key] = f;
-  sidebar(f, active);
-  const main = box({ name: "Main", gap: 20, p: [28, 32, 40, 32] });
-  put(f, main, { grow: true });
-  return { frame: f, main: main };
-}
-
-function finishDesktop(f) {
-  if (f.height < DH) {
-    f.primaryAxisSizingMode = "FIXED";
-    f.counterAxisSizingMode = "FIXED";
-    f.resize(DW, DH);
-  }
-  return f;
-}
-
-function sidebar(parent, active) {
-  const s = box({ name: "Sidebar", gap: 4, p: [20, 12, 20, 12], fill: "surface", w: 248 });
-  if (wf()) {
-    s.strokes = paint("line");
-    s.strokeRightWeight = 1;
-    s.strokeLeftWeight = 0;
-    s.strokeTopWeight = 0;
-    s.strokeBottomWeight = 0;
-  }
-  put(parent, s, { fillH: true });
-  const top = box({ name: "Brand", dir: "h", gap: 10, cross: "CENTER", p: [0, 8, 20, 8] });
-  put(s, top, { fillW: true });
-  const tile = box({ name: "Mark", main: "CENTER", cross: "CENTER", w: 40, h: 40, r: 11, fill: "brand" });
-  icon(tile, "wrench", 20, "onBrand");
-  top.appendChild(tile);
-  const tt = box({ name: "Name" });
-  put(top, tt, { grow: true });
-  text(tt, "แจ้งซ่อม มช.", { size: 15, w: "b", lh: 130 });
-  text(tt, "เมนูผู้ดูแลระบบ", { size: 12, c: "muted", lh: 130 });
-  [["dash", "grid", "แดชบอร์ด", "A01"], ["requests", "clipboard", "คำร้องทั้งหมด", "A02"], ["settings", "database", "ข้อมูลพื้นฐาน", "A04"]].forEach(function (it) {
-    const on = it[0] === active;
-    const row = box({ name: "Nav/" + it[2], dir: "h", gap: 12, p: [0, 12], h: 44, r: 12, cross: "CENTER", fill: on ? "brandSoft" : null });
-    put(s, row, { fillW: true });
-    icon(row, it[1], 20, on ? "brand" : "ink");
-    text(row, it[2], { size: 15, w: "sb", c: on ? "brand" : "ink", grow: true });
-    if (it[0] === "requests") {
-      const badge = box({ name: "Badge", main: "CENTER", cross: "CENTER", fill: "redI", p: [0, 7], h: 22 });
-      badge.cornerRadius = 11;
-      text(badge, "6", { size: 12, w: "b", c: "#FFFFFF", lh: 120 });
-      row.appendChild(badge);
-    }
-    link(row, it[3]);
-  });
-  const fill = box({ name: "Fill" });
-  put(s, fill, { fillW: true });
-  fill.layoutGrow = 1;
-  const foot = box({ name: "Account", gap: 4, p: [12, 8, 0, 8] });
-  foot.strokes = paint("line");
-  foot.strokeTopWeight = 1;
-  foot.strokeBottomWeight = 0;
-  foot.strokeLeftWeight = 0;
-  foot.strokeRightWeight = 0;
-  put(s, foot, { fillW: true });
-  text(foot, "พรทิพย์ วงศ์ใหญ่", { size: 14, w: "sb" });
-  const out = box({ name: "Logout", dir: "h", gap: 10, p: [0, 0], h: 40, cross: "CENTER" });
-  put(foot, out, { fillW: true });
-  icon(out, "log-out", 18, "redI");
-  text(out, "ออกจากระบบ", { size: 15, w: "sb", c: "redI" });
-  link(out, "R01");
-  return s;
+function adminScreen(key, title, nav) {
+  const s = screen(key, title, { role: "admin", nav: nav, colW: DESK_W });
+  const m = body(s.col, { p: [isD() ? 0 : 16, 20, 24, 20], gap: 20 });
+  return { s: s, m: m };
 }
 
 function adminTitle(main, title, subtitle, right) {
-  const r = box({ name: "Page title", dir: "h", gap: 16, cross: "CENTER" });
+  const r = box({ name: "Page title", dir: isD() ? "h" : "v", gap: isD() ? 16 : 12, cross: isD() ? "CENTER" : "MIN" });
   put(main, r, { fillW: true });
   const t = box({ name: "Titles" });
-  put(r, t, { grow: true });
-  text(t, title, { size: 26, w: "b", lh: 130 });
-  if (subtitle) text(t, subtitle, { size: 14, c: "muted" });
-  if (right) right(r);
+  put(r, t, isD() ? { grow: true } : { fillW: true });
+  text(t, title, { size: isD() ? 26 : 24, w: "b", lh: 130 });
+  if (subtitle) text(t, subtitle, { size: 14, c: "muted", fillW: true });
+  if (right) {
+    const ctl = box({ name: "Controls", dir: "h", gap: 8, cross: "CENTER" });
+    if (isD()) r.appendChild(ctl);
+    else {
+      put(r, ctl, { fillW: true });
+      ctl.layoutWrap = "WRAP";
+      ctl.counterAxisSpacing = 8;
+    }
+    right(ctl);
+  }
   return r;
 }
 
 function kpi(parent, label, value, sub, o) {
   o = o || {};
-  const c = box({ name: "KPI/" + label, gap: 6, p: 18, fill: "surface", r: 16, stroke: wf() ? "line" : null });
+  const c = box({ name: "KPI/" + label, gap: 6, p: isD() ? 18 : 14, fill: "surface", r: 16, stroke: wf() ? "line" : null });
   put(parent, c, { grow: true });
   const h = box({ name: "Head", dir: "h", gap: 8, cross: "CENTER" });
   put(c, h, { fillW: true });
@@ -1670,25 +1873,54 @@ function kpi(parent, label, value, sub, o) {
   text(h, label, { size: 13, w: "m", c: "muted", grow: true });
   const v = box({ name: "Value", dir: "h", gap: 6, cross: "MAX" });
   put(c, v, { fillW: true });
-  text(v, value, { size: 30, w: "b", c: o.tone === "red" ? "redI" : "ink", lh: 120 });
+  text(v, value, { size: isD() ? 30 : 26, w: "b", c: o.tone === "red" ? "redI" : "ink", lh: 120 });
   if (o.unit) text(v, o.unit, { size: 14, c: "muted" });
   text(c, sub, { size: 12, c: "muted", fillW: true });
   return c;
 }
 
+function kpiGrid(main, items) {
+  if (isD()) {
+    const k = box({ name: "KPIs", dir: "h", gap: 16, cross: "MIN" });
+    put(main, k, { fillW: true });
+    items.forEach(function (it) { kpi(k, it[0], it[1], it[2], it[3]); });
+    return;
+  }
+  // Mobile: two per row, the last one full width (grid-cols-2 in the web app).
+  const g = box({ name: "KPIs", gap: 12 });
+  put(main, g, { fillW: true });
+  for (let i = 0; i < items.length; i += 2) {
+    const row = box({ name: "KPI row", dir: "h", gap: 12, cross: "MIN" });
+    put(g, row, { fillW: true });
+    items.slice(i, i + 2).forEach(function (it) { kpi(row, it[0], it[1], it[2], it[3]); });
+  }
+}
+
+function chartW() {
+  return isD() ? (CUR_W - 20) / 2 : CUR_W - 40;
+}
+
+function chartRow(main) {
+  const r = box({ name: "Charts", dir: isD() ? "h" : "v", gap: isD() ? 20 : 16, cross: "MIN" });
+  put(main, r, { fillW: true });
+  return r;
+}
+
 function chartCard(parent, title, build, o) {
   o = o || {};
-  const c = box({ name: "Chart/" + title, gap: 14, p: 20, fill: "surface", r: 16, stroke: wf() ? "line" : null });
-  put(parent, c, { grow: !o.fixedW });
-  if (o.fixedW) {
+  const c = box({ name: "Chart/" + title, gap: 14, p: isD() ? 20 : 16, fill: "surface", r: 16, stroke: wf() ? "line" : null });
+  if (isD()) {
     c.layoutSizingHorizontal = "FIXED";
-    c.resize(o.fixedW, c.height);
+    c.resize(chartW(), c.height);
+    parent.appendChild(c);
+  } else {
+    put(parent, c, { fillW: true });
   }
   const h = box({ name: "Head", dir: "h", main: "SPACE_BETWEEN", cross: "CENTER" });
   put(c, h, { fillW: true });
   text(h, title, { size: 16, w: "b" });
   if (o.aside) text(h, o.aside, { size: 13, c: "muted" });
-  build(c);
+  build(c, (isD() ? chartW() : CUR_W) - (isD() ? 40 : 32));
   return c;
 }
 
@@ -1716,7 +1948,6 @@ function lineChartSvg(w, h, values) {
 }
 
 function columnsSvg(w, h, series, colors) {
-  // series: [[a, b?], ...] grouped columns
   const groups = series.length;
   const per = series[0].length;
   const max = Math.max.apply(null, series.map(function (s) { return Math.max.apply(null, s); })) * 1.15;
@@ -1736,7 +1967,7 @@ function columnsSvg(w, h, series, colors) {
 
 function hBars(parent, rows, width, colorKey) {
   const max = Math.max.apply(null, rows.map(function (r) { return r[1]; }));
-  const labelW = 150;
+  const labelW = isD() ? 150 : 110;
   const barMax = width - labelW - 40;
   rows.forEach(function (r) {
     const row = box({ name: "Bar/" + r[0], dir: "h", gap: 10, cross: "CENTER" });
@@ -1760,66 +1991,60 @@ function legend(parent, items) {
   });
 }
 
+function axisLabels(parent, labels) {
+  const row = box({ name: "Labels", dir: "h" });
+  put(parent, row, { fillW: true });
+  labels.forEach(function (l) {
+    const cell = box({ name: l, cross: "CENTER" });
+    put(row, cell, { grow: true });
+    text(cell, l, { size: 12, c: "muted" });
+  });
+}
+
 function A01() {
-  const s = desktopScreen("A01", "แดชบอร์ด", "dash");
-  const m = s.main;
+  const a = adminScreen("A01", "แดชบอร์ด", "dash");
+  const m = a.m;
   adminTitle(m, "แดชบอร์ด", "ภาพรวมงานซ่อม · 18 ส.ค. – 17 ก.ย. 69", function (r) {
     segmented(r, ["7 วัน", "30 วัน", "เดือนนี้", "กำหนดเอง"], 1, { hug: true });
     button(r, "Excel", { v: "secondary", icon: "sheet", size: "sm" });
     button(r, "PDF", { v: "secondary", icon: "file-text", size: "sm" });
   });
-  const k = box({ name: "KPIs", dir: "h", gap: 16, cross: "MIN" });
-  put(m, k, { fillW: true });
-  kpi(k, "คำร้องทั้งหมด", "43", "แจ้งเข้ามาในช่วงนี้", { icon: "clipboard" });
-  kpi(k, "ยังไม่ปิดงาน", "14", "33% ของทั้งหมด", { icon: "clock", tone: "blue" });
-  kpi(k, "ด่วนมากที่ยังเปิด", "3", "ควรจัดการก่อน", { icon: "alert", tone: "red" });
-  kpi(k, "เวลาปิดงานเฉลี่ย", "38.5", "จาก 22 งานที่ปิด", { icon: "check-circle", tone: "green", unit: "ชม." });
-  kpi(k, "ความพึงพอใจเฉลี่ย", "4.6", "จาก 19 คะแนน", { icon: "star", tone: "orange", unit: "/ 5" });
+  kpiGrid(m, [
+    ["คำร้องทั้งหมด", "43", "แจ้งเข้ามาในช่วงนี้", { icon: "clipboard" }],
+    ["ยังไม่ปิดงาน", "14", "33% ของทั้งหมด", { icon: "clock", tone: "blue" }],
+    ["ด่วนมากที่ยังเปิด", "3", "ควรจัดการก่อน", { icon: "alert", tone: "red" }],
+    ["เวลาปิดงานเฉลี่ย", "38.5", "จาก 22 งานที่ปิด", { icon: "check-circle", tone: "green", unit: "ชม." }],
+    ["ความพึงพอใจเฉลี่ย", "4.6", "จาก 19 คะแนน", { icon: "star", tone: "orange", unit: "/ 5" }],
+  ]);
 
-  const colW = (CONTENT_W - 20) / 2;
-  const r1 = box({ name: "Row 1", dir: "h", gap: 20, cross: "MIN" });
-  put(m, r1, { fillW: true });
-  chartCard(r1, "จำนวนคำร้องรายวัน", function (c) {
-    svgNode(c, lineChartSvg(colW - 40, 180, [1, 2, 1, 3, 2, 4, 2, 1, 3, 5, 2, 3, 1, 2, 4, 3, 2, 1, 2, 3, 4, 2, 1, 3, 2, 1, 2, 3, 1, 2]));
-  }, { fixedW: colW, aside: "30 วัน" });
-  chartCard(r1, "แยกตามสถานะ", function (c) {
-    hBars(c, [["รอรับเรื่อง", 6, "c5"], ["รับเรื่องแล้ว", 3, "c2"], ["มอบหมายช่างแล้ว", 3, "c2"], ["กำลังซ่อม", 4, "c2"], ["ซ่อมเสร็จ รอยืนยัน", 3, "c3"], ["ปิดงาน", 22, "c3"]], colW - 40, "c1");
-  }, { fixedW: colW });
+  const r1 = chartRow(m);
+  chartCard(r1, "จำนวนคำร้องรายวัน", function (c, w) {
+    svgNode(c, lineChartSvg(w, 180, [1, 2, 1, 3, 2, 4, 2, 1, 3, 5, 2, 3, 1, 2, 4, 3, 2, 1, 2, 3, 4, 2, 1, 3, 2, 1, 2, 3, 1, 2]));
+  }, { aside: "30 วัน" });
+  chartCard(r1, "แยกตามสถานะ", function (c, w) {
+    hBars(c, [["รอรับเรื่อง", 6, "c5"], ["รับเรื่องแล้ว", 3, "c2"], ["มอบหมายช่างแล้ว", 3, "c2"], ["กำลังซ่อม", 4, "c2"], ["ซ่อมเสร็จ รอยืนยัน", 3, "c3"], ["ปิดงาน", 22, "c3"]], w, "c1");
+  });
 
-  const r2 = box({ name: "Row 2", dir: "h", gap: 20, cross: "MIN" });
-  put(m, r2, { fillW: true });
-  chartCard(r2, "5 อาคารที่แจ้งมากที่สุด", function (c) {
-    hBars(c, [["อาคาร CAMT", 12], ["อาคารเรียนรวม", 9], ["สำนักหอสมุด", 6], ["หอพักนักศึกษา 5", 5], ["อาคารคณะวิศวฯ 30 ปี", 4]], colW - 40, "c1");
-  }, { fixedW: colW });
-  chartCard(r2, "แยกตามประเภทปัญหา", function (c) {
-    svgNode(c, columnsSvg(colW - 40, 160, [[9], [7], [11], [6], [4], [5], [1]], ["c1"]));
-    const labels = box({ name: "Labels", dir: "h" });
-    put(c, labels, { fillW: true });
-    ["ไฟฟ้า", "ประปา", "แอร์", "IT", "เฟอร์ฯ", "อาคาร", "อื่น ๆ"].forEach(function (l) {
-      const cell = box({ name: l, cross: "CENTER" });
-      put(labels, cell, { grow: true });
-      text(cell, l, { size: 12, c: "muted" });
-    });
-  }, { fixedW: colW });
+  const r2 = chartRow(m);
+  chartCard(r2, "5 อาคารที่แจ้งมากที่สุด", function (c, w) {
+    hBars(c, [["CAMT", 12], ["RB5 อาคารเรียนรวม 5", 9], ["HB7 คณะมนุษยศาสตร์", 6], ["หอพักนักศึกษาหญิง 3", 5], ["ILC-A", 4]], w, "c1");
+  });
+  chartCard(r2, "แยกตามประเภทปัญหา", function (c, w) {
+    svgNode(c, columnsSvg(w, 160, [[9], [7], [11], [6], [4], [5], [1]], ["c1"]));
+    axisLabels(c, ["ไฟฟ้า", "ประปา", "แอร์", "IT", "เฟอร์ฯ", "อาคาร", "อื่น ๆ"]);
+  });
 
-  const r3 = box({ name: "Row 3", dir: "h", gap: 20, cross: "MIN" });
-  put(m, r3, { fillW: true });
-  chartCard(r3, "ภาระงานช่าง", function (c) {
-    svgNode(c, columnsSvg(colW - 40, 150, [[2, 14], [3, 11], [1, 8]], ["c2", "c3"]));
-    const labels = box({ name: "Labels", dir: "h" });
-    put(c, labels, { fillW: true });
-    ["สมศักดิ์", "วิชัย", "พจน์ณิชา"].forEach(function (l) {
-      const cell = box({ name: l, cross: "CENTER" });
-      put(labels, cell, { grow: true });
-      text(cell, l, { size: 12, c: "muted" });
-    });
+  const r3 = chartRow(m);
+  chartCard(r3, "ภาระงานช่าง", function (c, w) {
+    svgNode(c, columnsSvg(w, 150, [[2, 14], [3, 11], [1, 8]], ["c2", "c3"]));
+    axisLabels(c, ["สมศักดิ์", "วิชัย", "พจน์ณิชา"]);
     legend(c, [["งานค้าง", "c2"], ["ปิดงานในช่วงนี้", "c3"]]);
-  }, { fixedW: colW });
+  });
   chartCard(r3, "งานด่วนมากที่ค้างนานที่สุด", function (c) {
     text(c, "แตะเพื่อจัดการ", { size: 13, c: "muted" });
     const list = box({ name: "Urgent list", gap: 0 });
     put(c, list, { fillW: true });
-    [["Zap", "MR-2609-0041", "อาคารเรียนรวม · ชั้น 1 · ห้อง 105", "assigned", "35 นาที"], ["Droplets", "MR-2609-0030", "หอพักนักศึกษา 5 · ชั้น 2 · ห้อง 203", "in_progress", "3 วัน"], ["Building2", "MR-2609-0027", "อาคาร CAMT · ชั้น 5 · ห้อง 502", "waiting_parts", "4 วัน"]].forEach(function (u, i) {
+    [["Zap", "MR-2609-0041", LOC_RB5_1, "assigned", "35 นาที"], ["Droplets", "MR-2609-0030", LOC_DORM, "in_progress", "3 วัน"], ["Building2", "MR-2609-0027", LOC_HB7, "waiting_parts", "4 วัน"]].forEach(function (u, i) {
       const r = box({ name: "Urgent/" + u[1], dir: "h", gap: 12, p: [10, 0], cross: "CENTER" });
       r.strokes = paint("line");
       r.strokeTopWeight = i === 0 ? 0 : 1;
@@ -1831,29 +2056,30 @@ function A01() {
       const t = box({ name: "Text" });
       put(r, t, { grow: true });
       text(t, u[1], { size: 14, w: "sb" });
-      text(t, u[2], { size: 12, c: "muted" });
+      text(t, u[2], { size: 12, c: "muted", fillW: true });
       statusPill(r, u[3]);
-      text(r, u[4], { size: 12, c: "muted" });
+      if (isD()) text(r, u[4], { size: 12, c: "muted" });
       link(r, "A03");
     });
     linkText(c, "ดูงานด่วนทั้งหมด", "A02", { size: 14 });
-  }, { fixedW: colW });
-  return finishDesktop(s.frame);
+  });
+  return finish(a.s);
 }
 
 const TABLE_COLS = [["เลขที่", 120], ["ประเภท", 170], ["สถานที่", 250], ["ผู้แจ้ง", 150], ["ความเร่งด่วน", 110], ["สถานะ", 150], ["ช่าง", 110]];
+const TABLE_MOBILE_W = 1160;
 
 const TABLE_ROWS = [
-  ["MR-2609-0042", "AirVent", "อาคาร CAMT · ชั้น 3 · 301", "อนันต์ ศรีวงศ์", "normal", "pending", "—", "10 นาที"],
-  ["MR-2609-0041", "Zap", "อาคารเรียนรวม · ชั้น 1 · 105", "ศิริพร คำแสน", "urgent", "assigned", "สมศักดิ์", "35 นาที"],
-  ["MR-2609-0039", "Droplets", "อาคารเรียนรวม · ชั้น 2 · 202", "ณัฐวุฒิ ปัญญาดี", "normal", "need_info", "—", "1 วัน"],
-  ["MR-2609-0035", "Monitor", "อาคาร CAMT · ชั้น 4 · 402", "กมลชนก อินทร์แก้ว", "low", "in_progress", "พจน์ณิชา", "2 วัน"],
-  ["MR-2609-0033", "Armchair", "สำนักหอสมุด · ชั้น 2 · 201", "ภูริภัทร สายสุวรรณ", "normal", "waiting_parts", "วิชัย", "2 วัน"],
-  ["MR-2609-0030", "Droplets", "หอพักนักศึกษา 5 · ชั้น 2 · 203", "ภานิชา ศรีกระจ่าง", "urgent", "in_progress", "วิชัย", "3 วัน"],
-  ["MR-2609-0028", "AirVent", "อาคารเรียนรวม · ชั้น 4 · 401", "สุภาวิกา นันทสุวรรณ", "normal", "completed", "สมศักดิ์", "4 วัน"],
-  ["MR-2609-0021", "Zap", "สำนักหอสมุด · ชั้น 1 · 103", "ตรีรัตน์ จอมพันธ์", "normal", "closed", "สมศักดิ์", "6 วัน"],
-  ["MR-2609-0019", "Building2", "อาคาร CAMT · ชั้น 5 · 502", "ธนภัทร มณีวงศ์", "low", "closed", "วิชัย", "8 วัน"],
-  ["MR-2609-0015", "Ellipsis", "อาคารศูนย์ประชุม · ชั้น 1 · 101", "พิมพ์ชนก ทองดี", "normal", "rejected", "—", "10 วัน"],
+  ["MR-2609-0042", "AirVent", "CAMT · ชั้น 3 · CAMT301", "อนันต์ ศรีวงศ์", "normal", "pending", "—", "10 นาที"],
+  ["MR-2609-0041", "Zap", "RB5 · ชั้น 1 · RB5103", "ศิริพร คำแสน", "urgent", "assigned", "สมศักดิ์", "35 นาที"],
+  ["MR-2609-0039", "Droplets", "RB5 · ชั้น 2 · RB5202", "ณัฐวุฒิ ปัญญาดี", "normal", "need_info", "—", "1 วัน"],
+  ["MR-2609-0035", "Monitor", "ILC-A · ชั้น 2 · ILC-A204", "กมลชนก อินทร์แก้ว", "low", "in_progress", "พจน์ณิชา", "2 วัน"],
+  ["MR-2609-0033", "Armchair", "BAB1 · ชั้น 3 · BAB1302", "ภูริภัทร สายสุวรรณ", "normal", "waiting_parts", "วิชัย", "2 วัน"],
+  ["MR-2609-0030", "Droplets", "หอพักหญิง 3 · ห้องน้ำรวม", "ภานิชา ศรีกระจ่าง", "urgent", "in_progress", "วิชัย", "3 วัน"],
+  ["MR-2609-0028", "AirVent", "HB7 · ชั้น 4 · HB7402", "สุภาวิกา นันทสุวรรณ", "normal", "completed", "สมศักดิ์", "4 วัน"],
+  ["MR-2609-0021", "Zap", "สำนักหอสมุด · ห้องน้ำ", "ตรีรัตน์ จอมพันธ์", "normal", "closed", "สมศักดิ์", "6 วัน"],
+  ["MR-2609-0019", "Building2", "CAMT · ชั้น 4 · CAMT401", "ธนภัทร มณีวงศ์", "low", "closed", "วิชัย", "8 วัน"],
+  ["MR-2609-0015", "Ellipsis", "SCB1 · ชั้น 1 · SCB1100", "พิมพ์ชนก ทองดี", "normal", "rejected", "—", "10 วัน"],
 ];
 
 function filterChip(parent, label) {
@@ -1868,14 +2094,30 @@ function requestTable(main, rowTo) {
   adminTitle(main, "คำร้องทั้งหมด", "43 รายการ · แตะแถวเพื่อจัดการ");
   const fbar = box({ name: "Filters", dir: "h", gap: 10, cross: "CENTER" });
   put(main, fbar, { fillW: true });
+  if (!isD()) {
+    fbar.layoutWrap = "WRAP";
+    fbar.counterAxisSpacing = 8;
+  }
   const search = input(fbar, { placeholder: "ค้นหาเลขคำร้อง เช่น MR-2609", leading: "search" });
   search.layoutSizingHorizontal = "FIXED";
-  search.resize(280, search.height);
+  search.resize(isD() ? 280 : CUR_W, search.height);
   ["ทุกสถานะ", "ทุกประเภท", "ทุกวิทยาเขต", "ทุกอาคาร", "ทุกความเร่งด่วน"].forEach(function (l) { filterChip(fbar, l); });
   linkText(fbar, "ล้างตัวกรอง", null, { size: 14 });
 
+  // Mobile: the table keeps its width and scrolls sideways inside a clipped container.
+  let host = main;
+  if (!isD()) {
+    host = box({ name: "Table scroller", clip: true });
+    put(main, host, { fillW: true });
+    host.overflowDirection = "HORIZONTAL";
+  }
   const table = box({ name: "Table", fill: "surface", r: 16, clip: true, stroke: wf() ? "line" : null });
-  put(main, table, { fillW: true });
+  if (isD()) put(host, table, { fillW: true });
+  else {
+    table.layoutSizingHorizontal = "FIXED";
+    table.resize(TABLE_MOBILE_W, table.height);
+    host.appendChild(table);
+  }
   const head = box({ name: "Header row", dir: "h", p: [0, 8], h: 44, fill: wf() ? "fill" : "#FAFAFB", cross: "CENTER" });
   put(table, head, { fillW: true });
   TABLE_COLS.concat([["แจ้งเมื่อ", 0]]).forEach(function (c) {
@@ -1887,7 +2129,7 @@ function requestTable(main, rowTo) {
     put(head, cell, { grow: !c[1] });
     text(cell, c[0], { size: 13, w: "sb", c: "muted" });
   });
-  TABLE_ROWS.forEach(function (r, i) {
+  TABLE_ROWS.forEach(function (r) {
     const row = box({ name: "Row/" + r[0], dir: "h", p: [0, 8], h: 60, cross: "CENTER" });
     row.strokes = paint("line");
     row.strokeTopWeight = 1;
@@ -1921,37 +2163,43 @@ function requestTable(main, rowTo) {
 }
 
 function A02() {
-  const s = desktopScreen("A02", "คำร้องทั้งหมด", "requests");
-  requestTable(s.main, "A03");
-  return finishDesktop(s.frame);
+  const a = adminScreen("A02", "คำร้องทั้งหมด", "requests");
+  requestTable(a.m, "A03");
+  return finish(a.s);
 }
 
-// Side panel over a copy of the request table.
+// Right side panel (desktop) or full-screen panel (mobile) over a copy of the request table.
 function panelScreen(key, title, build) {
+  const W = isD() ? DW : MW;
+  const H = isD() ? DH : MH;
+  const pw = isD() ? 560 : MW;
   const f = figma.createFrame();
-  f.name = key + " · " + title;
-  f.resize(DW, DH);
+  f.name = K(key) + " · " + title;
+  f.resize(W, H);
   f.fills = paint("page");
   f.clipsContent = true;
-  const bg = SCREENS.A02.clone();
+  const base = SCREENS[K("A02")];
+  const bg = base.clone();
   f.appendChild(bg);
   bg.x = 0;
   bg.y = 0;
-  bg.name = "Background · A02";
+  bg.name = "Background · " + base.name;
   const dim = figma.createRectangle();
   dim.name = "Backdrop";
-  dim.resize(DW, DH);
+  dim.resize(W, H);
   dim.fills = paint("backdrop", 0.3);
   f.appendChild(dim);
-  const p = box({ name: "Side panel", gap: 16, p: [20, 24, 24, 24], fill: "page", w: 560, clip: true });
+  const p = box({ name: "Side panel", gap: 16, p: isD() ? [20, 24, 24, 24] : [0, 20, 24, 20], fill: "page", w: pw, clip: true });
   p.layoutSizingVertical = "FIXED";
-  p.resize(560, DH);
+  p.resize(pw, H);
   shadow(p, 0, 30, 0.15);
   f.appendChild(p);
-  p.x = DW - 560;
+  p.x = W - pw;
   p.y = 0;
+  // Mobile: the panel covers the whole phone, so it carries the status bar itself.
+  if (!isD()) statusBar(p);
   build(p);
-  SCREENS[key] = f;
+  SCREENS[K(key)] = f;
   return f;
 }
 
@@ -1961,7 +2209,7 @@ function panelHead(p, closeTo) {
   const t = box({ name: "Titles" });
   put(h, t, { grow: true });
   text(t, "MR-2609-0042", { size: 20, w: "b" });
-  text(t, "แจ้งโดย อนันต์ ศรีวงศ์ · 17 ก.ย. 69 14:30", { size: 13, c: "muted" });
+  text(t, "แจ้งโดย อนันต์ ศรีวงศ์ · 17 ก.ย. 69 14:30", { size: 13, c: "muted", fillW: true });
   const x = box({ name: "Close", main: "CENTER", cross: "CENTER", w: 40, h: 40, r: 20, fill: "surface" });
   x.cornerRadius = 20;
   icon(x, "x", 20, "muted");
@@ -2023,7 +2271,7 @@ function A03b() {
         check: t[4],
         last: i === arr.length - 1,
         trailing: function (r) {
-          const tags = box({ name: "Tags", dir: "h", gap: 6, cross: "CENTER" });
+          const tags = box({ name: "Tags", dir: isD() ? "h" : "v", gap: 6, cross: isD() ? "CENTER" : "MAX" });
           if (t[3]) pill(tags, "เหมาะสมที่สุด", "green");
           pill(tags, "งานค้าง " + t[2], "gray");
           r.appendChild(tags);
@@ -2038,22 +2286,24 @@ function A03b() {
 }
 
 function settingsScreen(key, title, tab, build) {
-  const s = desktopScreen(key, title, "settings");
-  adminTitle(s.main, "ข้อมูลพื้นฐาน", "แก้ไขประเภทปัญหา สถานที่ และบัญชีช่าง ได้โดยไม่ต้องแก้โค้ด");
-  const seg = segmented(s.main, ["ประเภทปัญหา", "สถานที่", "บัญชีช่าง"], tab, { hug: true, links: ["A04", "A04b", "A04c"] });
+  const a = adminScreen(key, title, "settings");
+  adminTitle(a.m, "ข้อมูลพื้นฐาน", "แก้ไขประเภทปัญหา สถานที่ และบัญชีช่าง ได้โดยไม่ต้องแก้โค้ด");
+  const seg = segmented(a.m, ["ประเภทปัญหา", "สถานที่", "บัญชีช่าง"], tab, { hug: isD(), links: ["A04", "A04b", "A04c"] });
   seg.name = "Tabs";
-  build(s.main);
-  return finishDesktop(s.frame);
+  build(a.m);
+  return finish(a.s);
 }
 
 function columnCard(parent, title, addLabel, width) {
   const c = box({ name: "Column/" + title, fill: "surface", r: 16, clip: true, stroke: wf() ? "line" : null });
-  if (width) {
+  if (isD() && width) {
     c.layoutSizingHorizontal = "FIXED";
     c.resize(width, c.height);
     parent.appendChild(c);
-  } else {
+  } else if (isD() && parent.layoutMode === "HORIZONTAL") {
     put(parent, c, { grow: true });
+  } else {
+    put(parent, c, { fillW: true });
   }
   const h = box({ name: "Head", dir: "h", main: "SPACE_BETWEEN", cross: "CENTER", p: [12, 16, 4, 16] });
   put(c, h, { fillW: true });
@@ -2091,21 +2341,21 @@ function A04() {
 
 function A04b() {
   return settingsScreen("A04b", "ข้อมูลพื้นฐาน สถานที่", 1, function (m) {
-    const row = box({ name: "Columns", dir: "h", gap: 16, cross: "MIN" });
+    const row = box({ name: "Columns", dir: isD() ? "h" : "v", gap: 16, cross: "MIN" });
     put(m, row, { fillW: true });
-    const c1 = columnCard(row, "วิทยาเขต", "เพิ่ม");
-    settingRow(c1, { label: "วิทยาเขตสวนสัก", selected: true, chevron: true });
-    settingRow(c1, { label: "วิทยาเขตสวนดอก", chevron: true });
-    settingRow(c1, { label: "วิทยาเขตแม่เหียะ", chevron: true });
+    const c1 = columnCard(row, "วิทยาเขต (3)", "เพิ่ม");
+    settingRow(c1, { label: "วิทยาเขตสวนสัก", detail: "74 อาคาร", selected: true, chevron: true });
+    settingRow(c1, { label: "วิทยาเขตสวนดอก", detail: "11 อาคาร", chevron: true });
+    settingRow(c1, { label: "วิทยาเขตแม่เหียะ", detail: "5 อาคาร", chevron: true });
     spacer(c1, 8);
     const c2 = columnCard(row, "อาคาร", "เพิ่ม");
-    ["สำนักหอสมุด", "หอพักนักศึกษา 5", "อาคาร CAMT", "อาคารคณะวิศวกรรมศาสตร์ 30 ปี", "อาคารเรียนรวม"].forEach(function (b) {
-      settingRow(c2, { label: b, selected: b === "อาคาร CAMT", chevron: true });
+    ["RB1 อาคารเรียนรวม 1 (ทรงกลม)", "RB5 อาคารเรียนรวม 5", "HB7 คณะมนุษยศาสตร์ (8 ชั้น)", CAMT, "ILC-A ห้องเรียน Active Learning", "สำนักหอสมุด (Main Library)"].forEach(function (b) {
+      settingRow(c2, { label: b, selected: b === CAMT, chevron: true });
     });
     spacer(c2, 8);
     const c3 = columnCard(row, "ห้อง", "เพิ่ม");
-    ["ห้อง 101", "ห้อง 102", "ห้อง 201", "ห้อง 202", "ห้อง 301", "ห้อง 302"].forEach(function (r) {
-      settingRow(c3, { label: r, detail: "ชั้น " + r.charAt(4) });
+    [["CAMT101", 1], ["CAMT102", 1], ["CAMT Auditorium", 1], ["CAMT201", 2], ["CAMT301", 3], ["Lab Game", 3], ["CAMT401", 4]].forEach(function (r) {
+      settingRow(c3, { label: r[0], detail: "ชั้น " + r[1] });
     });
     spacer(c3, 8);
   });
@@ -2125,32 +2375,52 @@ function A04c() {
 // Page assembly
 // ---------------------------------------------------------------------------
 
+const REPORTER = [
+  function () { return loginScreen("R01", "R02", "R01b", "anan.s"); },
+  R01b, R02, R03, R04, R05, R05b, R06, R07, R08, R09, R09b, R10, R11, R12, R13, R14, R15,
+];
+const TECH = [
+  function () { return loginScreen("T00", "T01", null, "tech01"); },
+  T01,
+  function () { return techDetail("T02", "assigned"); },
+  function () { return techDetail("T02b", "in_progress"); },
+  function () { return techDetail("T02c", "waiting_parts"); },
+  T03w, T03, T04, T05,
+];
+const ADMIN = [
+  function () { return loginScreen("A00", "A01", null, "admin01"); },
+  A01, A02,
+  function () { return panelDetail("A03", "pending"); },
+  function () { return panelDetail("A03a", "accepted"); },
+  A03b, A04, A04b, A04c,
+];
+
 const GROUPS = [
-  {
-    title: "ผู้แจ้ง · มือถือ 390 × 844",
-    note: "เข้าสู่ระบบ → ตั้งโปรไฟล์ → แจ้งซ่อม 4 ขั้น → ติดตามสถานะ → ยืนยัน/ให้คะแนน",
-    screens: [R01, R01b, R02, R03, R04, R05, R05b, R06, R07, R08, R09, R09b, R10, R11, R12, R13, R14, R15],
-  },
-  {
-    title: "ช่าง · มือถือ 390 × 844",
-    note: "งานใหม่ → รับงาน → รออะไหล่ → ซ่อมเสร็จ แนบรูปหลังซ่อม",
-    screens: [T01, function () { return techDetail("T02", "assigned"); }, function () { return techDetail("T02b", "in_progress"); }, function () { return techDetail("T02c", "waiting_parts"); }, T03w, T03, T04, T05],
-  },
-  {
-    title: "ผู้ดูแลระบบ · เดสก์ท็อป 1440 × 900",
-    note: "แดชบอร์ด → คำร้องทั้งหมด → รับเรื่อง → มอบหมายช่าง · ข้อมูลพื้นฐาน",
-    screens: [A01, A02, function () { return panelDetail("A03", "pending"); }, function () { return panelDetail("A03a", "accepted"); }, A03b, A04, A04b, A04c],
-  },
+  { title: "ผู้แจ้ง · มือถือ 390 × 844", device: "m", screens: REPORTER, note: "เข้าสู่ระบบ → ตั้งโปรไฟล์ → แจ้งซ่อม 4 ขั้น → ติดตามสถานะ → ยืนยัน/ให้คะแนน" },
+  { title: "ผู้แจ้ง · เดสก์ท็อป 1440 × 900", device: "d", screens: REPORTER, note: "หน้าเดียวกันบนจอคอม: แถบเมนูซ้าย หน้าแรกและหน้าติดตามแบ่ง 2 คอลัมน์" },
+  { title: "ช่าง · มือถือ 390 × 844", device: "m", screens: TECH, note: "เข้าสู่ระบบ → งานใหม่ → รับงาน → รออะไหล่ → ซ่อมเสร็จ แนบรูปหลังซ่อม" },
+  { title: "ช่าง · เดสก์ท็อป 1440 × 900", device: "d", screens: TECH, note: "หน้าเดียวกันบนจอคอม: ปุ่มดำเนินการอยู่คอลัมน์ขวาคู่กับไทม์ไลน์" },
+  { title: "ผู้ดูแลระบบ · มือถือ 390 × 844", device: "m", screens: ADMIN, note: "เมนูด้านบน · ตารางเลื่อนซ้าย-ขวา · แผงจัดการเต็มจอ" },
+  { title: "ผู้ดูแลระบบ · เดสก์ท็อป 1440 × 900", device: "d", screens: ADMIN, note: "แดชบอร์ด → คำร้องทั้งหมด → รับเรื่อง → มอบหมายช่าง · ข้อมูลพื้นฐาน" },
+];
+
+const FLOWS = [
+  ["R01", "1 · ผู้แจ้ง · มือถือ"],
+  ["R01d", "2 · ผู้แจ้ง · เดสก์ท็อป"],
+  ["T00", "3 · ช่าง · มือถือ"],
+  ["T00d", "4 · ช่าง · เดสก์ท็อป"],
+  ["A00", "5 · ผู้ดูแลระบบ · มือถือ"],
+  ["A00d", "6 · ผู้ดูแลระบบ · เดสก์ท็อป"],
 ];
 
 const GAP_X = 96;
-const GAP_Y = 200;
+const GAP_Y = 160;
 
-function totalScreens() {
-  return GROUPS.reduce(function (n, g) { return n + g.screens.length; }, 0);
+function selectedGroups(opts) {
+  return GROUPS.filter(function (g) { return (g.device === "m" && opts.mobile !== false) || (g.device === "d" && opts.desktop !== false); });
 }
 
-async function buildPage(page, label, done, total) {
+async function buildPage(page, label, groups, done, total) {
   ICON_CACHE = {};
   ICON_HOLDER = figma.createFrame();
   ICON_HOLDER.name = "_icons";
@@ -2162,12 +2432,13 @@ async function buildPage(page, label, done, total) {
 
   const titleFrame = box({ name: "Title", gap: 6 });
   text(titleFrame, "แจ้งซ่อม มช. — " + label, { size: 48, w: "b" });
-  text(titleFrame, "สร้างจากเว็บจริงด้วยปลั๊กอิน · เปิดแท็บ Prototype เพื่อดูเส้น Interaction · ฟอนต์: " + FONT_FAMILY, { size: 20, c: "muted" });
+  text(titleFrame, "สร้างจากเว็บจริงด้วยปลั๊กอิน · แต่ละกลุ่มเป็น Flow แยกกัน เปิดแท็บ Prototype เพื่อดูเส้น Interaction · ฟอนต์: " + FONT_FAMILY, { size: 20, c: "muted" });
   titleFrame.x = 0;
   titleFrame.y = -220;
 
   let y = 0;
-  for (const g of GROUPS) {
+  for (const g of groups) {
+    DEVICE = g.device;
     const frames = [];
     for (const build of g.screens) {
       frames.push(build());
@@ -2175,14 +2446,25 @@ async function buildPage(page, label, done, total) {
       figma.ui.postMessage({ type: "progress", text: label + ": สร้างหน้า " + done + "/" + total });
       if (done % 4 === 0) await new Promise(function (r) { setTimeout(r, 0); });
     }
+    // Lay out in rows (desktop frames wrap every 6 to keep the canvas manageable).
+    const perRow = g.device === "m" ? 18 : 6;
     let x = 0;
-    let maxH = 0;
-    for (const fr of frames) {
+    let rowTop = y + 120;
+    let rowH = 0;
+    let maxX = 0;
+    frames.forEach(function (fr, i) {
+      if (i > 0 && i % perRow === 0) {
+        rowTop += rowH + GAP_X;
+        x = 0;
+        rowH = 0;
+      }
       fr.x = x;
-      fr.y = y + 120;
+      fr.y = rowTop;
       x += fr.width + GAP_X;
-      maxH = Math.max(maxH, fr.height);
-    }
+      maxX = Math.max(maxX, x);
+      rowH = Math.max(rowH, fr.height);
+    });
+    const bottom = rowTop + rowH;
     let container = null;
     if (typeof figma.createSection === "function") {
       container = figma.createSection();
@@ -2197,7 +2479,7 @@ async function buildPage(page, label, done, total) {
         fr.x = ax + 80;
         fr.y = ay - y + 40;
       }
-      container.resizeWithoutConstraints(x - GAP_X + 160, maxH + 200);
+      container.resizeWithoutConstraints(maxX - GAP_X + 160, bottom - y + 120);
     }
     const heading = box({ name: "Group heading/" + g.title, gap: 4 });
     text(heading, g.title, { size: 32, w: "b" });
@@ -2210,7 +2492,7 @@ async function buildPage(page, label, done, total) {
       heading.x = 0;
       heading.y = y;
     }
-    y += maxH + 120 + GAP_Y;
+    y = bottom + GAP_Y + 80;
   }
   ICON_HOLDER.remove();
   return done;
@@ -2222,7 +2504,9 @@ async function run(opts) {
   const jobs = [];
   if (opts.ui) jobs.push({ mode: "ui", name: "UI — แจ้งซ่อม มช.", label: "UI" });
   if (opts.wf) jobs.push({ mode: "wf", name: "Wireframe — แจ้งซ่อม มช.", label: "Wireframe" });
-  const total = totalScreens() * jobs.length;
+  const groups = selectedGroups(opts);
+  const perJob = groups.reduce(function (n, g) { return n + g.screens.length; }, 0);
+  const total = perJob * jobs.length;
   let done = 0;
   const summary = [];
   let lastPage = null;
@@ -2233,15 +2517,15 @@ async function run(opts) {
     page.name = opts.replace || old.length === 0 ? job.name : job.name + " (" + (old.length + 1) + ")";
     await figma.setCurrentPageAsync(page);
     if (opts.replace) old.forEach(function (p) { p.remove(); });
-    done = await buildPage(page, job.label, done, total);
+    done = await buildPage(page, job.label, groups, done, total);
     let links = 0;
     if (opts.proto) {
       figma.ui.postMessage({ type: "progress", text: job.label + ": กำลังโยงเส้น Interaction..." });
-      links = await wire(page);
+      links = await wire(page, FLOWS);
     }
     summary.push(job.label + " " + Object.keys(SCREENS).length + " หน้า" + (opts.proto ? " · " + links + " เส้น" : ""));
     if (opts.proto && WIRE_FAILED.length) {
-      summary.push(job.label + " ข้าม " + WIRE_FAILED.length + " เส้นที่ Figma ไม่รับ (" + WIRE_FAILED.slice(0, 3).join(", ") + ")");
+      summary.push(job.label + " ข้าม " + WIRE_FAILED.length + " เส้น (" + WIRE_FAILED.slice(0, 3).join(", ") + ")");
     }
     lastPage = page;
   }
