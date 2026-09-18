@@ -23,6 +23,7 @@
 | `06-state.puml` | สถานะของคำร้อง (ตรงกับ `lib/requests/transition.ts`) |
 | `07-ia.puml` | สถาปัตยกรรมสารสนเทศ (แผนผังเว็บไซต์) |
 | `08-userflow.puml` | ผังการใช้งาน |
+| `09-activity-dashboard.puml` | กิจกรรม: แดชบอร์ดและส่งออกรายงาน (ฟังก์ชันเพิ่มเติม) |
 
 สีและฟอนต์ที่ใช้ร่วมกันอยู่ใน `_style.iuml` แก้ออนไลน์ได้ที่ plantuml.com หรือส่วนขยาย PlantUML ใน VS Code
 
