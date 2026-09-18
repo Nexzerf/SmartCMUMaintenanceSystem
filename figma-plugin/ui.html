@@ -1,0 +1,68 @@
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; font: 13px/1.5 Inter, "IBM Plex Sans Thai", system-ui, sans-serif; color: #111; background: #fff; }
+  main { padding: 16px; }
+  h1 { font-size: 15px; margin: 0 0 4px; }
+  p.lead { margin: 0 0 14px; color: #6b6b6b; }
+  fieldset { border: 0; padding: 0; margin: 0 0 14px; }
+  legend { font-weight: 600; margin-bottom: 6px; }
+  label { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; cursor: pointer; }
+  label small { display: block; color: #6b6b6b; }
+  input[type="checkbox"] { margin-top: 3px; accent-color: #5b2c83; }
+  button { width: 100%; min-height: 40px; border: 0; border-radius: 8px; background: #5b2c83; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  button:disabled { background: #d0c6da; cursor: progress; }
+  #status { margin-top: 12px; min-height: 40px; color: #6b6b6b; white-space: pre-wrap; }
+  #status.error { color: #b42318; }
+  #status.done { color: #17693a; }
+</style>
+<main>
+  <h1>สร้างหน้าจอแจ้งซ่อม มช.</h1>
+  <p class="lead">สร้างทุกหน้าของเว็บ (ผู้แจ้ง ช่าง ผู้ดูแลระบบ) ลงในไฟล์นี้</p>
+
+  <fieldset>
+    <legend>สร้างชุดไหน</legend>
+    <label><input type="checkbox" id="ui" checked /><span>UI<small>สีจริง ไอคอน และข้อความตามเว็บ</small></span></label>
+    <label><input type="checkbox" id="wf" checked /><span>Wireframe<small>โครงสร้างสีเทา สำหรับอธิบายเลย์เอาต์</small></span></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>ตัวเลือก</legend>
+    <label><input type="checkbox" id="proto" checked /><span>โยงเส้น Interaction<small>ปุ่มและลิงก์พาไปหน้าถัดไป ดูได้ในแท็บ Prototype</small></span></label>
+    <label><input type="checkbox" id="replace" checked /><span>แทนที่หน้าเดิมที่เคยสร้าง<small>ถ้าไม่ติ๊ก จะสร้างหน้าใหม่เพิ่ม</small></span></label>
+  </fieldset>
+
+  <button id="go">สร้างทุกหน้า</button>
+  <div id="status" role="status"></div>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  $("go").onclick = () => {
+    if (!$("ui").checked && !$("wf").checked) {
+      $("status").className = "error";
+      $("status").textContent = "เลือกอย่างน้อย 1 ชุด";
+      return;
+    }
+    $("go").disabled = true;
+    $("status").className = "";
+    $("status").textContent = "กำลังเริ่ม...";
+    parent.postMessage(
+      { pluginMessage: { type: "build", ui: $("ui").checked, wf: $("wf").checked, proto: $("proto").checked, replace: $("replace").checked } },
+      "*",
+    );
+  };
+  onmessage = (e) => {
+    const m = e.data.pluginMessage;
+    if (!m) return;
+    if (m.type === "progress") $("status").textContent = m.text;
+    if (m.type === "done") {
+      $("status").className = "done";
+      $("status").textContent = m.text;
+      $("go").disabled = false;
+    }
+    if (m.type === "error") {
+      $("status").className = "error";
+      $("status").textContent = "สร้างไม่สำเร็จ: " + m.message;
+      $("go").disabled = false;
+    }
+  };
+</script>
