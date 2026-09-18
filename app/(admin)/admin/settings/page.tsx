@@ -4,6 +4,8 @@ import { requirePageUser } from "@/lib/auth/guard";
 import { sql } from "@/lib/db";
 import { getCatalog } from "@/lib/requests/queries";
 
+export const maxDuration = 30;
+
 export const metadata: Metadata = { title: "ข้อมูลพื้นฐาน" };
 
 export default async function SettingsPage() {

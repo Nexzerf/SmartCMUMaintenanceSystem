@@ -8,12 +8,13 @@ import { Select } from "@/components/ui/Field";
 import { StatusPill, UrgencyTag } from "@/components/ui/StatusPill";
 import { cn } from "@/lib/cn";
 import { formatDateTime, relativeTime } from "@/lib/format";
-import type { Catalog, RequestListItem } from "@/lib/requests/queries";
+import { ADMIN_LIST_LIMIT } from "@/lib/limits";
+import type { AdminRequestRow, Catalog } from "@/lib/requests/queries";
 import type { serialize } from "@/lib/serialize";
 import { STATUS_LABEL, URGENCY_LABEL, URGENCY_RANK, type Status, type Urgency } from "@/lib/status";
 import { RequestPanel } from "./RequestPanel";
 
-type Row = ReturnType<typeof serialize<RequestListItem>>;
+type Row = ReturnType<typeof serialize<AdminRequestRow>>;
 type Filters = { status?: string; category?: string; campus?: string; building?: string; urgency?: string; from?: string; to?: string; q?: string };
 type SortKey = "code" | "category" | "location" | "reporter" | "urgency" | "status" | "technician" | "created";
 
@@ -94,7 +95,7 @@ export function RequestTable({ rows, catalog, filters, openCode }: { rows: Row[]
         <div>
           <h1 className="text-[26px] font-bold tracking-tight">คำร้องทั้งหมด</h1>
           <p className="text-[15px] text-muted">
-            {rows.length} รายการ{rows.length >= 500 ? " (แสดง 500 รายการล่าสุด)" : ""} · แตะแถวเพื่อจัดการ
+            {rows.length} รายการ{rows.length >= ADMIN_LIST_LIMIT ? ` (แสดง ${ADMIN_LIST_LIMIT} รายการล่าสุด)` : ""} · แตะแถวเพื่อจัดการ
           </p>
         </div>
         <div className="flex w-full gap-2 sm:w-auto">

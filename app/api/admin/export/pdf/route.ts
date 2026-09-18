@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   if (!user || user.role !== "admin") return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const sp = req.nextUrl.searchParams;
   const range = resolveRange({ range: sp.get("range") ?? undefined, from: sp.get("from") ?? undefined, to: sp.get("to") ?? undefined });
-  const file = await buildPdf(await getDashboard(range));
+  const file = await buildPdf(await getDashboard(range, { includeRows: true }));
   return new NextResponse(new Uint8Array(file), {
     headers: {
       "Content-Type": "application/pdf",

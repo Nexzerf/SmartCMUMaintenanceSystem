@@ -2,6 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { sql } from "@/lib/db";
 import { CATALOG_TAG } from "@/lib/cache-tags";
+import { ADMIN_LIST_LIMIT } from "@/lib/limits";
 import type { CurrentUser } from "@/lib/auth/guard";
 import type { Status, Urgency } from "@/lib/status";
 
@@ -82,6 +83,11 @@ export type AdminFilters = {
   q?: string;
 };
 
+export type AdminRequestRow = Pick<
+  RequestListItem,
+  "id" | "code" | "status" | "urgency" | "created_at" | "category_name" | "category_icon" | "building_name" | "floor" | "room_name" | "reporter_name" | "technician_name" | "merged_into_code"
+>;
+
 export async function listAdminRequests(f: AdminFilters) {
   const conds = [sql`true`];
   if (f.status === "open") conds.push(sql`r.status in ('pending','accepted','assigned','in_progress','waiting_parts','need_info','completed')`);
@@ -94,11 +100,23 @@ export async function listAdminRequests(f: AdminFilters) {
   if (f.to) conds.push(sql`r.created_at < ${new Date(new Date(f.to + "T00:00:00+07:00").getTime() + 86400000)}`);
   if (f.q) conds.push(sql`r.code ilike ${"%" + f.q.trim() + "%"}`);
   const where = conds.reduce((acc, c) => sql`${acc} and ${c}`);
-  return sql<RequestListItem[]>`
-    select ${LIST_COLUMNS(null)} ${LIST_JOINS}
+  // Only the columns the table shows: no per-row image lookup, no follower check.
+  return sql<AdminRequestRow[]>`
+    select r.id, r.code, r.status, r.urgency, r.created_at,
+      c.name_th as category_name, c.icon as category_icon,
+      b.name_th as building_name, rm.floor, rm.name_th as room_name,
+      rep.full_name as reporter_name, tech.full_name as technician_name, merged.code as merged_into_code
+    from requests r
+    join categories c on c.id = r.category_id
+    join rooms rm on rm.id = r.room_id
+    join buildings b on b.id = rm.building_id
+    join campuses cp on cp.id = b.campus_id
+    join users rep on rep.id = r.reporter_id
+    left join users tech on tech.id = r.assigned_technician_id
+    left join requests merged on merged.id = r.merged_into_id
     where ${where}
     order by r.created_at desc
-    limit 500`;
+    limit ${ADMIN_LIST_LIMIT}`;
 }
 
 export type RequestDetail = RequestListItem & {

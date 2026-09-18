@@ -5,6 +5,8 @@ import { getCatalog, listAdminRequests, type AdminFilters } from "@/lib/requests
 import { runAutoClose } from "@/lib/requests/transition";
 import { serialize } from "@/lib/serialize";
 
+export const maxDuration = 30;
+
 export const metadata: Metadata = { title: "คำร้องทั้งหมด" };
 
 type Params = Record<string, string | undefined>;
