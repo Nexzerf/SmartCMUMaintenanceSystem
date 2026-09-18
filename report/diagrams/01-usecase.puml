@@ -1,0 +1,82 @@
+@startuml usecase
+' แผนภาพยูสเคส ระบบแจ้งซ่อม มช.
+!pragma layout smetana
+!include _style.iuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "นักศึกษา" as Student
+actor "บุคลากร" as Staff
+actor "ผู้แจ้ง" as Reporter
+actor "ช่าง" as Tech
+actor "ผู้ดูแลระบบ" as Admin
+actor "ตัวตั้งเวลาของระบบ" as Timer
+
+Student --|> Reporter
+Staff --|> Reporter
+
+rectangle "ระบบแจ้งซ่อม มช." {
+  usecase "UC01 เข้าสู่ระบบ" as UC01
+  usecase "UC02 ตั้งค่าโปรไฟล์และยินยอม PDPA" as UC02
+  usecase "UC03 แจ้งซ่อม" as UC03
+  usecase "UC04 เลือกสถานที่" as UC04
+  usecase "UC05 แนบรูปภาพ" as UC05
+  usecase "UC06 ติดตามคำร้องที่ซ้ำแทน" as UC06
+  usecase "UC07 ติดตามสถานะคำร้อง" as UC07
+  usecase "UC08 ยกเลิกคำร้อง" as UC08
+  usecase "UC09 ตอบคำถามเพิ่มเติม" as UC09
+  usecase "UC10 ยืนยันผลและให้คะแนน" as UC10
+  usecase "UC11 แจ้งว่ายังไม่หาย" as UC11
+  usecase "UC12 ดูประวัติการแจ้งซ่อม" as UC12
+  usecase "UC13 ดูการแจ้งเตือน" as UC13
+  usecase "UC14 ดูงานที่ได้รับมอบหมาย" as UC14
+  usecase "UC15 รับงาน" as UC15
+  usecase "UC16 แจ้งรออะไหล่" as UC16
+  usecase "UC17 บันทึกผลการซ่อม" as UC17
+  usecase "UC18 แนบรูปหลังซ่อม" as UC18
+  usecase "UC19 รับเรื่องคำร้อง" as UC19
+  usecase "UC20 ขอข้อมูลเพิ่มเติม" as UC20
+  usecase "UC21 มอบหมายช่าง" as UC21
+  usecase "UC22 รวมคำร้องซ้ำ" as UC22
+  usecase "UC23 ปฏิเสธคำร้อง" as UC23
+  usecase "UC24 ดูแดชบอร์ดสรุปผล" as UC24
+  usecase "UC25 ส่งออกรายงาน Excel/PDF" as UC25
+  usecase "UC26 จัดการข้อมูลพื้นฐาน" as UC26
+  usecase "UC27 ปิดงานอัตโนมัติ" as UC27
+}
+
+Reporter --> UC01
+Reporter --> UC02
+Reporter --> UC03
+Reporter --> UC07
+Reporter --> UC12
+Reporter --> UC13
+UC03 ..> UC04 : <<include>>
+UC03 ..> UC05 : <<include>>
+UC06 ..> UC03 : <<extend>>
+UC08 ..> UC07 : <<extend>>
+UC09 ..> UC07 : <<extend>>
+UC10 ..> UC07 : <<extend>>
+UC11 ..> UC07 : <<extend>>
+
+Tech --> UC01
+Tech --> UC13
+Tech --> UC14
+Tech --> UC15
+Tech --> UC16
+Tech --> UC17
+UC17 ..> UC18 : <<include>>
+
+Admin --> UC01
+Admin --> UC13
+Admin --> UC19
+Admin --> UC20
+Admin --> UC21
+Admin --> UC22
+Admin --> UC23
+Admin --> UC24
+Admin --> UC26
+UC25 ..> UC24 : <<extend>>
+
+Timer --> UC27
+@enduml

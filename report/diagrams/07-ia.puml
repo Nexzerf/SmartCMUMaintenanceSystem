@@ -1,0 +1,66 @@
+@startwbs ia
+' สถาปัตยกรรมสารสนเทศ (Sitemap) ตรงกับ route ของเว็บ
+skinparam defaultFontName "Leelawadee UI"
+skinparam defaultFontSize 13
+skinparam dpi 150
+<style>
+wbsDiagram {
+  node {
+    BackgroundColor #F4EEF9
+    LineColor #5B2C83
+    RoundCorner 10
+  }
+  :depth(0) {
+    BackgroundColor #5B2C83
+    FontColor white
+  }
+  :depth(1) {
+    BackgroundColor #E6DAF0
+  }
+}
+</style>
+* แจ้งซ่อม มช.\n/login
+** ผู้แจ้ง
+*** ตั้งค่าโปรไฟล์ + PDPA\n/profile/setup
+*** หน้าแรก\n/home
+*** แจ้งซ่อม\n/request/new
+**** 1. ปัญหา
+**** 2. สถานที่
+***** เจอคำร้องซ้ำ
+**** 3. รายละเอียดและรูปภาพ
+**** 4. ตรวจสอบก่อนส่ง
+**** ส่งสำเร็จ
+*** ติดตามสถานะ\n/request/[code]
+**** ยกเลิกคำร้อง
+**** ตอบคำถามเพิ่มเติม
+**** ยืนยันและให้คะแนน
+**** แจ้งว่ายังไม่หาย
+*** ประวัติ\n/history
+*** แจ้งเตือน\n/notifications
+*** โปรไฟล์\n/profile
+** ช่าง
+*** งานของฉัน\n/tech
+**** งานใหม่
+**** กำลังทำ
+**** รออะไหล่
+**** เสร็จแล้ว
+*** รายละเอียดงาน\n/tech/job/[code]
+**** รับงาน
+**** รออะไหล่
+**** บันทึกงานซ่อมเสร็จ
+*** แจ้งเตือน\n/tech/notifications
+*** โปรไฟล์\n/tech/profile
+** ผู้ดูแลระบบ
+*** แดชบอร์ด\n/admin
+**** ตัวชี้วัดและกราฟ
+**** ส่งออก Excel / PDF
+*** คำร้องทั้งหมด\n/admin/requests
+**** แผงจัดการคำร้อง
+***** รับเรื่อง / ขอข้อมูล
+***** มอบหมายช่าง
+***** รวมคำร้องซ้ำ / ปฏิเสธ
+*** ข้อมูลพื้นฐาน\n/admin/settings
+**** ประเภทปัญหา
+**** สถานที่
+**** บัญชีช่าง
+@endwbs

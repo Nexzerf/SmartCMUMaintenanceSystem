@@ -1,0 +1,27 @@
+' Shared look for every diagram
+skinparam defaultFontName "Leelawadee UI"
+skinparam defaultFontSize 13
+skinparam dpi 150
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ActivityBackgroundColor #F4EEF9
+skinparam ActivityBorderColor #5B2C83
+skinparam ActivityDiamondBackgroundColor #FFF4D6
+skinparam ActivityDiamondBorderColor #B7791F
+skinparam SwimlaneTitleFontStyle bold
+skinparam SwimlaneBorderColor #9A86AE
+skinparam usecase {
+  BackgroundColor #F4EEF9
+  BorderColor #5B2C83
+}
+skinparam rectangle {
+  BorderColor #5B2C83
+}
+skinparam state {
+  BackgroundColor #F4EEF9
+  BorderColor #5B2C83
+}
+skinparam actor {
+  BorderColor #5B2C83
+  BackgroundColor #FFFFFF
+}

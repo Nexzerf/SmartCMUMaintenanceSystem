@@ -1,0 +1,15 @@
+{
+  "name": "smart-cmu-maintenance-report",
+  "private": true,
+  "description": "Builds the project report (.docx), slides (.pptx) and diagrams (PlantUML → PNG/SVG/draw.io).",
+  "scripts": {
+    "diagrams": "node build-diagrams.js",
+    "report": "node build-report.js",
+    "slides": "node build-slides.js",
+    "all": "npm run diagrams && npm run report && npm run slides"
+  },
+  "dependencies": {
+    "docx": "^9.7.1",
+    "pptxgenjs": "^4.0.1"
+  }
+}

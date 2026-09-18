@@ -1,0 +1,49 @@
+@startuml userflow
+' ผังการใช้งาน (User Flow) หลักของผู้แจ้ง ช่าง และผู้ดูแลระบบ
+!include _style.iuml
+skinparam rectangle {
+  BackgroundColor #F4EEF9
+  RoundCorner 12
+}
+
+
+package "ผู้แจ้ง" {
+  rectangle "เข้าสู่ระบบ" as r1
+  rectangle "ตั้งค่าโปรไฟล์\n(ครั้งแรก)" as r2
+  rectangle "หน้าแรก" as r3
+  rectangle "แจ้งซ่อม 4 ขั้น" as r4
+  rectangle "ส่งสำเร็จ" as r5
+  rectangle "ติดตามสถานะ" as r6
+  rectangle "ยืนยันและให้คะแนน" as r7
+  r1 --> r2
+  r2 --> r3
+  r1 --> r3
+  r3 --> r4
+  r4 --> r5
+  r4 --> r6 : พบคำร้องซ้ำ
+  r5 --> r6
+  r6 --> r7
+}
+
+package "ผู้ดูแลระบบ" {
+  rectangle "แดชบอร์ด" as a1
+  rectangle "คำร้องทั้งหมด" as a2
+  rectangle "แผงจัดการคำร้อง" as a3
+  rectangle "มอบหมายช่าง" as a4
+  a1 --> a2
+  a2 --> a3
+  a3 --> a4
+}
+
+package "ช่าง" {
+  rectangle "งานของฉัน" as t1
+  rectangle "รายละเอียดงาน" as t2
+  rectangle "บันทึกงานซ่อมเสร็จ" as t3
+  t1 --> t2
+  t2 --> t3
+}
+
+r5 ..> a2 : คำร้องใหม่
+a4 ..> t1 : งานใหม่
+t3 ..> r6 : ซ่อมเสร็จ รอยืนยัน
+@enduml

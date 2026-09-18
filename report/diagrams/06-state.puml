@@ -1,0 +1,37 @@
+@startuml state
+' แผนภาพสถานะของคำร้อง ตรงกับ lib/requests/transition.ts
+!include _style.iuml
+hide empty description
+
+state "รอรับเรื่อง" as SUB
+state "ขอข้อมูลเพิ่มเติม" as INFO
+state "รับเรื่องแล้ว" as ACC
+state "มอบหมายช่างแล้ว" as ASG
+state "กำลังซ่อม" as WIP
+state "รออะไหล่" as PARTS
+state "ซ่อมเสร็จ รอยืนยัน" as DONE
+state "ปิดงาน" as CLOSED
+state "ยกเลิก" as CANCEL
+state "ปฏิเสธ" as REJECT
+
+[*] --> SUB : ผู้แจ้งส่งคำร้อง
+SUB --> ACC : รับเรื่อง
+SUB --> INFO : ขอข้อมูล
+ACC --> INFO : ขอข้อมูล
+INFO --> SUB : ผู้แจ้งตอบ
+INFO --> ACC : ผู้แจ้งตอบ
+ACC --> ASG : มอบหมายช่าง
+ASG --> WIP : ช่างรับงาน
+WIP --> PARTS : รออะไหล่
+PARTS --> WIP : ได้อะไหล่
+WIP --> DONE : บันทึกผลการซ่อม
+DONE --> CLOSED : ผู้แจ้งยืนยัน / ครบ 3 วัน
+DONE --> ACC : ยังไม่หาย
+SUB --> CANCEL : ผู้แจ้งยกเลิก
+SUB --> REJECT : ปฏิเสธ
+ACC --> REJECT : ปฏิเสธ
+ASG --> REJECT : ปฏิเสธ
+CLOSED --> [*]
+CANCEL --> [*]
+REJECT --> [*]
+@enduml
