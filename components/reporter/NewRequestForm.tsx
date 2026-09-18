@@ -49,6 +49,7 @@ export function NewRequestForm({ catalog, prefill }: { catalog: Catalog; prefill
   const [duplicate, setDuplicate] = useState<Duplicate>(null);
   const [dismissedDup, setDismissedDup] = useState<string | null>(null);
   const [successCode, setSuccessCode] = useState<string | null>(null);
+  const [buildingQuery, setBuildingQuery] = useState("");
   const [submitting, startSubmit] = useTransition();
   const [following, startFollow] = useTransition();
   const topRef = useRef<HTMLDivElement>(null);
@@ -293,13 +294,15 @@ export function NewRequestForm({ catalog, prefill }: { catalog: Catalog; prefill
                         ))}
                       </GroupedList>
                     ) : !building ? (
-                      <GroupedList title="อาคาร">
-                        {catalog.buildings
-                          .filter((b) => b.campus_id === campus.id)
-                          .map((b) => (
-                            <GroupedRow key={b.id} label={b.name_th} chevron onClick={() => setDraft((d) => ({ ...d, buildingId: b.id, floor: null, roomId: null }))} />
-                          ))}
-                      </GroupedList>
+                      <BuildingPicker
+                        buildings={catalog.buildings.filter((b) => b.campus_id === campus.id)}
+                        query={buildingQuery}
+                        onQuery={setBuildingQuery}
+                        onPick={(id) => {
+                          setBuildingQuery("");
+                          setDraft((d) => ({ ...d, buildingId: id, floor: null, roomId: null }));
+                        }}
+                      />
                     ) : draft.floor == null ? (
                       <GroupedList title="ชั้น">
                         {floors.map((f) => (
@@ -562,6 +565,45 @@ function SuccessScreen({ code }: { code: string }) {
       <Link href="/request/new" className="sr-only">
         แจ้งซ่อมเรื่องใหม่
       </Link>
+    </div>
+  );
+}
+
+/** Suan Sak alone has about 50 buildings: a search box saves scrolling through all of them. */
+function BuildingPicker({
+  buildings,
+  query,
+  onQuery,
+  onPick,
+}: {
+  buildings: Catalog["buildings"];
+  query: string;
+  onQuery: (q: string) => void;
+  onPick: (id: number) => void;
+}) {
+  const q = query.trim().toLowerCase();
+  const shown = q ? buildings.filter((b) => b.name_th.toLowerCase().includes(q)) : buildings;
+  return (
+    <div className="space-y-3">
+      {buildings.length > 8 ? (
+        <Input
+          type="search"
+          value={query}
+          onChange={(e) => onQuery(e.target.value)}
+          placeholder="ค้นหาอาคาร เช่น CAMT, RB5, หอสมุด"
+          aria-label="ค้นหาอาคาร"
+          enterKeyHint="search"
+        />
+      ) : null}
+      {shown.length ? (
+        <GroupedList title="อาคาร">
+          {shown.map((b) => (
+            <GroupedRow key={b.id} label={b.name_th} chevron onClick={() => onPick(b.id)} />
+          ))}
+        </GroupedList>
+      ) : (
+        <p className="rounded-[16px] bg-white px-4 py-5 text-center text-[15px] text-muted">ไม่พบอาคารชื่อ “{query.trim()}” ลองพิมพ์รหัสอาคารหรือชื่อคณะ</p>
+      )}
     </div>
   );
 }

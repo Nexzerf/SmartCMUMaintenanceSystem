@@ -32,7 +32,8 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
     <main className="px-4 py-6 md:px-8">
       <RequestTable
         rows={serialize(rows)}
-        catalog={catalog}
+        // The filters need categories, campuses and buildings only; 450+ rooms would just bloat the page.
+        catalog={{ ...catalog, rooms: [] }}
         filters={{ ...filters, category: filters.category?.toString(), campus: filters.campus?.toString(), building: filters.building?.toString() }}
         openCode={p.open}
       />

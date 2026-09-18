@@ -133,12 +133,12 @@ export function RequestPanel({ code, onClose }: { code: string | null; onClose: 
                 </Button>
               ) : null}
               {canAsk ? (
-                <Button variant="secondary" onClick={() => openMode("info")}>
+                <Button variant="secondary" className="whitespace-nowrap" onClick={() => openMode("info")}>
                   <MessageCircleQuestion size={17} aria-hidden /> ขอข้อมูลเพิ่ม
                 </Button>
               ) : null}
               {canMerge ? (
-                <Button variant="secondary" onClick={() => openMode("merge")}>
+                <Button variant="secondary" className="whitespace-nowrap" onClick={() => openMode("merge")}>
                   <GitMerge size={17} aria-hidden /> รวมคำร้องซ้ำ
                 </Button>
               ) : null}

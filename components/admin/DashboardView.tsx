@@ -166,7 +166,7 @@ export function DashboardView({ data }: { data: View }) {
         <Kpi icon={Star} label="ความพึงพอใจเฉลี่ย" value={k.avgRating} decimals={2} suffix="/ 5" hint={`จาก ${k.ratingCount} คะแนน`} />
       </div>
 
-      <div className="mt-3 grid items-start gap-3 xl:grid-cols-3">
+      <div className="mt-3 grid grid-cols-1 items-start gap-3 xl:grid-cols-3">
         <DashboardCharts
           series={data.series}
           statusData={statusData}
@@ -177,7 +177,7 @@ export function DashboardView({ data }: { data: View }) {
         />
       </div>
 
-      <div className="mt-3 grid items-start gap-3 xl:grid-cols-3">
+      <div className="mt-3 grid grid-cols-1 items-start gap-3 xl:grid-cols-3">
         <Card title="งานด่วนมากที่ค้างนานที่สุด" subtitle="แตะเพื่อจัดการ" className="xl:col-span-2">
           {data.oldestUrgent.length ? (
             <ul className="-mx-2">

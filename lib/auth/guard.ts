@@ -16,6 +16,9 @@ export type CurrentUser = {
   phone: string | null;
   profile_completed: boolean;
   pdpa_accepted_at: Date | null;
+  /** Unread notifications, and pending requests for admins: read here so layouts need no extra round trip. */
+  unread: number;
+  pending: number;
 };
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
@@ -23,7 +26,9 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const session = await verifySession(store.get(SESSION_COOKIE)?.value);
   if (!session) return null;
   const [user] = await sql<CurrentUser[]>`
-    select id, username, role, full_name, user_type, faculty, phone, profile_completed, pdpa_accepted_at
+    select id, username, role, full_name, user_type, faculty, phone, profile_completed, pdpa_accepted_at,
+      (select count(*)::int from notifications n where n.user_id = users.id and n.read_at is null) as unread,
+      case when role = 'admin' then (select count(*)::int from requests where status = 'pending') else 0 end as pending
     from users where id = ${session.uid} and is_active`;
   return user ?? null;
 });

@@ -7,10 +7,10 @@ import { useTransition } from "react";
 import { logout } from "@/app/actions/auth";
 import { cn } from "@/lib/cn";
 
-const NAV = [
+const NAV: { href: string; label: string; short?: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard, exact: true },
-  { href: "/admin/requests", label: "คำร้องทั้งหมด", icon: ClipboardList },
-  { href: "/admin/settings", label: "ข้อมูลพื้นฐาน", icon: Database },
+  { href: "/admin/requests", label: "คำร้องทั้งหมด", short: "คำร้อง", icon: ClipboardList },
+  { href: "/admin/settings", label: "ข้อมูลพื้นฐาน", short: "ข้อมูล", icon: Database },
 ];
 
 export function AdminSidebar({ pending, name }: { pending: number; name: string }) {
@@ -32,7 +32,8 @@ export function AdminSidebar({ pending, name }: { pending: number; name: string 
           </div>
         </div>
 
-        <nav aria-label="เมนูผู้ดูแลระบบ" className="flex flex-1 gap-1 overflow-x-auto md:flex-col md:overflow-visible">
+        {/* Phones: three equal icon-over-label buttons so every item (and the active one) is visible without scrolling. */}
+        <nav aria-label="เมนูผู้ดูแลระบบ" className="flex min-w-0 flex-1 gap-1 md:flex-col">
           {NAV.map((item) => {
             const active = item.exact ? path === item.href : path.startsWith(item.href);
             const Icon = item.icon;
@@ -44,15 +45,17 @@ export function AdminSidebar({ pending, name }: { pending: number; name: string 
                 aria-current={active ? "page" : undefined}
                 title={item.label}
                 className={cn(
-                  "relative flex min-h-11 shrink-0 items-center gap-3 rounded-[12px] px-3 text-[15px] font-semibold transition-colors md:justify-center lg:justify-start",
+                  "relative flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[12px] px-1 text-[12px] font-semibold transition-colors md:min-h-11 md:flex-none md:flex-row md:gap-3 md:px-3 md:text-[15px] lg:justify-start",
                   active ? "bg-brand-soft text-brand" : "text-ink hover:bg-fill",
                 )}
               >
                 <Icon size={20} aria-hidden />
-                <span className="md:sr-only lg:not-sr-only">{item.label}</span>
+                {/* Phones get a short label under the icon; the full name stays for screen readers and wide screens. */}
+                <span className="max-w-full truncate md:hidden" aria-hidden>{item.short ?? item.label}</span>
+                <span className="sr-only lg:not-sr-only">{item.label}</span>
                 {badge ? (
                   <span
-                    className="ml-auto inline-flex min-w-[22px] items-center justify-center rounded-full bg-red-ink px-1.5 text-xs font-bold leading-[22px] text-white md:absolute md:right-1 md:top-0.5 md:ml-0 md:min-w-[18px] md:leading-[18px] lg:static lg:ml-auto lg:min-w-[22px] lg:leading-[22px]"
+                    className="absolute right-1 top-0.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-ink px-1.5 text-xs font-bold leading-[18px] text-white lg:static lg:ml-auto lg:min-w-[22px] lg:leading-[22px]"
                     aria-label={`รอรับเรื่อง ${badge} รายการ`}
                   >
                     {badge}

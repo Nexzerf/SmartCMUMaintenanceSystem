@@ -3,11 +3,10 @@ import { IdleLogout } from "@/components/shell/IdleLogout";
 import { LiveUpdates } from "@/components/shell/LiveUpdates";
 import { ReporterTabBar } from "@/components/shell/TabBar";
 import { requirePageUser } from "@/lib/auth/guard";
-import { unreadCount } from "@/lib/requests/queries";
 
 export default async function ReporterLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePageUser("reporter");
-  const unread = await unreadCount(user.id);
+  const unread = user.unread;
 
   return (
     <div className="min-h-dvh lg:flex">

@@ -3,7 +3,7 @@ import { JobList } from "@/components/tech/JobList";
 import { NotificationBell } from "@/components/shell/NotificationBell";
 import { requirePageUser } from "@/lib/auth/guard";
 import { firstName } from "@/lib/format";
-import { listTechnicianJobs, unreadCount } from "@/lib/requests/queries";
+import { listTechnicianJobs } from "@/lib/requests/queries";
 import { runAutoClose } from "@/lib/requests/transition";
 import { serialize } from "@/lib/serialize";
 
@@ -12,7 +12,8 @@ export const metadata: Metadata = { title: "งานของฉัน" };
 export default async function TechJobsPage() {
   const user = await requirePageUser("technician");
   await runAutoClose();
-  const [jobs, unread] = await Promise.all([listTechnicianJobs(user.id), unreadCount(user.id)]);
+  const jobs = await listTechnicianJobs(user.id);
+  const unread = user.unread;
   const newCount = jobs.filter((j) => j.status === "assigned").length;
 
   return (

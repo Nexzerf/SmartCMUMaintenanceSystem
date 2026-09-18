@@ -8,7 +8,7 @@ import { NotificationBell } from "@/components/shell/NotificationBell";
 import { ButtonLink } from "@/components/ui/Button";
 import { requirePageUser } from "@/lib/auth/guard";
 import { firstName } from "@/lib/format";
-import { listReporterRequests, unreadCount } from "@/lib/requests/queries";
+import { listReporterRequests } from "@/lib/requests/queries";
 import { runAutoClose } from "@/lib/requests/transition";
 import { serialize } from "@/lib/serialize";
 import { OPEN_STATUSES } from "@/lib/status";
@@ -25,7 +25,8 @@ function greeting() {
 export default async function HomePage() {
   const user = await requirePageUser("reporter");
   await runAutoClose();
-  const [requests, unread] = await Promise.all([listReporterRequests(user.id), unreadCount(user.id)]);
+  const requests = await listReporterRequests(user.id);
+  const unread = user.unread;
   const active = requests.find((r) => OPEN_STATUSES.includes(r.status) && !r.merged_into_code);
   const recent = requests.slice(0, 3);
 

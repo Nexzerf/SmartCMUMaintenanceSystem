@@ -6,7 +6,7 @@ import { Timeline } from "@/components/request/Timeline";
 import { NotificationBell } from "@/components/shell/NotificationBell";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { requirePageUser } from "@/lib/auth/guard";
-import { getRequestForUser, unreadCount } from "@/lib/requests/queries";
+import { getRequestForUser } from "@/lib/requests/queries";
 import { runAutoClose } from "@/lib/requests/transition";
 import { serialize } from "@/lib/serialize";
 import { buildTimeline } from "@/lib/timeline";
@@ -19,7 +19,8 @@ export default async function TrackRequestPage({ params }: { params: Promise<{ c
   const { code } = await params;
   const user = await requirePageUser("reporter");
   await runAutoClose();
-  const [detail, unread] = await Promise.all([getRequestForUser(decodeURIComponent(code), user), unreadCount(user.id)]);
+  const detail = await getRequestForUser(decodeURIComponent(code), user);
+  const unread = user.unread;
   if (!detail) notFound();
 
   const r = serialize(detail);

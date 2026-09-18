@@ -65,12 +65,12 @@ export function JobActions({ requestId, code, status }: { requestId: string; cod
         ) : null}
 
         {status === "in_progress" ? (
-          <div className="grid grid-cols-[1fr_1.4fr] gap-2 lg:grid-cols-1">
-            <Button size="lg" variant="secondary" onClick={() => setSheet("parts")}>
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
+            <Button size="lg" variant="secondary" className="whitespace-nowrap px-3" onClick={() => setSheet("parts")}>
               <PackageSearch size={18} aria-hidden />
               รออะไหล่
             </Button>
-            <Button size="lg" onClick={() => setSheet("complete")}>
+            <Button size="lg" className="whitespace-nowrap px-3" onClick={() => setSheet("complete")}>
               <CheckCircle2 size={18} aria-hidden />
               ซ่อมเสร็จแล้ว
             </Button>
