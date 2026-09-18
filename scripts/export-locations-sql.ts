@@ -9,7 +9,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { LEGACY_BUILDINGS, LEGACY_ROOMS, LOCATIONS, roomFloor, roomName } from "../db/locations";
+import { facultyOf, LEGACY_BUILDINGS, LEGACY_ROOMS, LOCATIONS, roomFloor, roomName } from "../db/locations";
 
 const q = (s: string) => `'${s.replace(/'/g, "''")}'`;
 const out: string[] = [
@@ -17,6 +17,9 @@ const out: string[] = [
   "-- Supabase → SQL Editor → paste → Run. Safe to run more than once; nothing is deleted.",
   'set search_path to "SmartCMU";',
   "begin;",
+  "",
+  "-- 0. Faculty of each building (reporters pick campus → faculty → building).",
+  "alter table buildings add column if not exists faculty_th text;",
   "",
   "-- 1. Rename earlier buildings (only when the new name is not taken yet).",
 ];
@@ -31,6 +34,7 @@ for (const c of LOCATIONS) {
   for (const b of c.buildings) {
     out.push(
       `insert into buildings (campus_id, name_th) select id, ${q(b.name)} from campuses where name_th = ${q(c.name)} and not exists (select 1 from buildings where name_th = ${q(b.name)});`,
+      `update buildings set faculty_th = ${q(facultyOf(b.name))} where name_th = ${q(b.name)} and faculty_th is distinct from ${q(facultyOf(b.name))};`,
     );
   }
 }

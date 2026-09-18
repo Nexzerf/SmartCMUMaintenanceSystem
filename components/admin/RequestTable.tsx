@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/Field";
 import { StatusPill, UrgencyTag } from "@/components/ui/StatusPill";
 import { cn } from "@/lib/cn";
 import { floorLabel, formatDateTime, relativeTime } from "@/lib/format";
+import { facultiesOf, facultyName } from "@/lib/faculties";
 import { ADMIN_LIST_LIMIT } from "@/lib/limits";
 import type { AdminRequestRow, Catalog } from "@/lib/requests/queries";
 import type { serialize } from "@/lib/serialize";
@@ -150,10 +151,16 @@ export function RequestTable({ rows, catalog, filters, openCode }: { rows: Row[]
         </Select>
         <Select aria-label="อาคาร" value={filters.building ?? ""} onChange={(e) => apply({ building: e.target.value || undefined })}>
           <option value="">ทุกอาคาร</option>
-          {buildings.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name_th}
-            </option>
+          {facultiesOf(buildings).map((f) => (
+            <optgroup key={f.name} label={f.name}>
+              {buildings
+                .filter((b) => facultyName(b) === f.name)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name_th}
+                  </option>
+                ))}
+            </optgroup>
           ))}
         </Select>
         <Select aria-label="ความเร่งด่วน" value={filters.urgency ?? ""} onChange={(e) => apply({ urgency: e.target.value || undefined })}>

@@ -65,12 +65,15 @@ export async function saveCampus(input: { id?: number; name_th: string }): Promi
   }
 }
 
-export async function saveBuilding(input: { id?: number; campus_id: number; name_th: string }): Promise<ActionResult> {
+export async function saveBuilding(input: { id?: number; campus_id: number; name_th: string; faculty_th?: string }): Promise<ActionResult> {
   try {
     await guard();
-    const d = z.object({ id: optId, campus_id: z.number().int().positive(), name_th: name("ชื่ออาคาร") }).parse(input);
-    if (d.id) await sql`update buildings set name_th = ${d.name_th}, campus_id = ${d.campus_id} where id = ${d.id}`;
-    else await sql`insert into buildings (campus_id, name_th) values (${d.campus_id}, ${d.name_th})`;
+    const d = z
+      .object({ id: optId, campus_id: z.number().int().positive(), name_th: name("ชื่ออาคาร"), faculty_th: z.string().trim().max(120, "ชื่อคณะยาวเกินไป").optional() })
+      .parse(input);
+    const faculty = d.faculty_th || null;
+    if (d.id) await sql`update buildings set name_th = ${d.name_th}, campus_id = ${d.campus_id}, faculty_th = ${faculty} where id = ${d.id}`;
+    else await sql`insert into buildings (campus_id, name_th, faculty_th) values (${d.campus_id}, ${d.name_th}, ${faculty})`;
     return ok();
   } catch (err) {
     return actionError(err);

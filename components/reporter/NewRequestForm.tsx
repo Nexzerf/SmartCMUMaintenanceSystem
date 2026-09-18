@@ -14,6 +14,7 @@ import { GroupedList, GroupedRow } from "@/components/ui/GroupedList";
 import { Sheet } from "@/components/ui/Sheet";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { cn } from "@/lib/cn";
+import { facultiesOf, facultyName } from "@/lib/faculties";
 import { floorLabel, relativeTime } from "@/lib/format";
 import type { Catalog } from "@/lib/requests/queries";
 import { URGENCY_HINT, URGENCY_LABEL, type Urgency } from "@/lib/status";
@@ -23,6 +24,8 @@ type Draft = {
   categoryId: number | null;
   urgency: Urgency;
   campusId: number | null;
+  /** Faculty or unit, between campus and building (buildings.faculty_th). */
+  faculty: string | null;
   buildingId: number | null;
   floor: number | null;
   roomId: number | null;
@@ -35,7 +38,7 @@ type Duplicate = Awaited<ReturnType<typeof checkDuplicate>>;
 
 const STEPS = ["ปัญหา", "สถานที่", "รายละเอียด", "ตรวจสอบ"];
 const DRAFT_KEY = "cmu-request-draft";
-const EMPTY: Draft = { categoryId: null, urgency: "normal", campusId: null, buildingId: null, floor: null, roomId: null, landmark: "", description: "", images: [] };
+const EMPTY: Draft = { categoryId: null, urgency: "normal", campusId: null, faculty: null, buildingId: null, floor: null, roomId: null, landmark: "", description: "", images: [] };
 
 export function NewRequestForm({ catalog, prefill }: { catalog: Catalog; prefill?: { categoryId?: number; roomId?: number } }) {
   const router = useRouter();
@@ -70,12 +73,16 @@ export function NewRequestForm({ catalog, prefill }: { catalog: Catalog; prefill
         roomId: room?.id ?? null,
         floor: room?.floor ?? null,
         buildingId: building?.id ?? null,
+        faculty: building ? facultyName(building) : null,
         campusId: building?.campus_id ?? null,
       };
     } else {
       try {
         const saved = sessionStorage.getItem(DRAFT_KEY);
         if (saved) next = { ...EMPTY, ...JSON.parse(saved) };
+        // Drafts saved before the faculty step existed: derive it from the chosen building.
+        const b = catalog.buildings.find((x) => x.id === next.buildingId);
+        if (b && !next.faculty) next = { ...next, faculty: facultyName(b) };
       } catch {
         // ignore unavailable storage
       }
@@ -252,14 +259,22 @@ export function NewRequestForm({ catalog, prefill }: { catalog: Catalog; prefill
                 </div>
 
                 <nav aria-label="ตำแหน่งที่เลือก" className="no-scrollbar -mx-5 flex items-center gap-1 overflow-x-auto px-5 text-sm">
-                  <Crumb active={!campus} onClick={() => setDraft((d) => ({ ...d, campusId: null, buildingId: null, floor: null, roomId: null }))}>
+                  <Crumb active={!campus} onClick={() => setDraft((d) => ({ ...d, campusId: null, faculty: null, buildingId: null, floor: null, roomId: null }))}>
                     วิทยาเขต
                   </Crumb>
                   {campus ? (
                     <>
                       <ChevronRight size={14} className="shrink-0 text-muted" aria-hidden />
-                      <Crumb active={!building} onClick={() => setDraft((d) => ({ ...d, buildingId: null, floor: null, roomId: null }))}>
+                      <Crumb active={!draft.faculty} onClick={() => setDraft((d) => ({ ...d, faculty: null, buildingId: null, floor: null, roomId: null }))}>
                         {campus.name_th.replace("วิทยาเขต", "")}
+                      </Crumb>
+                    </>
+                  ) : null}
+                  {campus && draft.faculty ? (
+                    <>
+                      <ChevronRight size={14} className="shrink-0 text-muted" aria-hidden />
+                      <Crumb active={!building} onClick={() => setDraft((d) => ({ ...d, buildingId: null, floor: null, roomId: null }))}>
+                        {draft.faculty}
                       </Crumb>
                     </>
                   ) : null}
@@ -281,7 +296,7 @@ export function NewRequestForm({ catalog, prefill }: { catalog: Catalog; prefill
 
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
-                    key={`${draft.campusId}-${draft.buildingId}-${draft.floor}`}
+                    key={`${draft.campusId}-${draft.faculty}-${draft.buildingId}-${draft.floor}`}
                     initial={{ opacity: 0, x: 24 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -24 }}
@@ -290,19 +305,32 @@ export function NewRequestForm({ catalog, prefill }: { catalog: Catalog; prefill
                     {!campus ? (
                       <GroupedList title="วิทยาเขต">
                         {catalog.campuses.map((c) => (
-                          <GroupedRow key={c.id} label={c.name_th} chevron onClick={() => setDraft((d) => ({ ...d, campusId: c.id, buildingId: null, floor: null, roomId: null }))} />
+                          <GroupedRow key={c.id} label={c.name_th} chevron onClick={() => setDraft((d) => ({ ...d, campusId: c.id, faculty: null, buildingId: null, floor: null, roomId: null }))} />
                         ))}
                       </GroupedList>
-                    ) : !building ? (
-                      <BuildingPicker
+                    ) : !draft.faculty ? (
+                      <FacultyPicker
                         buildings={catalog.buildings.filter((b) => b.campus_id === campus.id)}
                         query={buildingQuery}
                         onQuery={setBuildingQuery}
-                        onPick={(id) => {
+                        onPickFaculty={(faculty) => {
+                          // A faculty with a single building goes straight to its floors.
+                          const only = catalog.buildings.filter((b) => b.campus_id === campus.id && facultyName(b) === faculty);
+                          setDraft((d) => ({ ...d, faculty, buildingId: only.length === 1 ? only[0].id : null, floor: null, roomId: null }));
+                        }}
+                        onPickBuilding={(b) => {
                           setBuildingQuery("");
-                          setDraft((d) => ({ ...d, buildingId: id, floor: null, roomId: null }));
+                          setDraft((d) => ({ ...d, faculty: facultyName(b), buildingId: b.id, floor: null, roomId: null }));
                         }}
                       />
+                    ) : !building ? (
+                      <GroupedList title={`อาคาร · ${draft.faculty}`}>
+                        {catalog.buildings
+                          .filter((b) => b.campus_id === campus.id && facultyName(b) === draft.faculty)
+                          .map((b) => (
+                            <GroupedRow key={b.id} label={b.name_th} chevron onClick={() => setDraft((d) => ({ ...d, buildingId: b.id, floor: null, roomId: null }))} />
+                          ))}
+                      </GroupedList>
                     ) : draft.floor == null ? (
                       <GroupedList title="ชั้น">
                         {floors.map((f) => (
@@ -569,36 +597,45 @@ function SuccessScreen({ code }: { code: string }) {
   );
 }
 
-/** Suan Sak alone has about 50 buildings: a search box saves scrolling through all of them. */
-function BuildingPicker({
+/**
+ * Campus → faculty/unit list. Typing searches every building of the campus instead, for people who
+ * already know the building code (CAMT, RB5, HB7…).
+ */
+function FacultyPicker({
   buildings,
   query,
   onQuery,
-  onPick,
+  onPickFaculty,
+  onPickBuilding,
 }: {
   buildings: Catalog["buildings"];
   query: string;
   onQuery: (q: string) => void;
-  onPick: (id: number) => void;
+  onPickFaculty: (faculty: string) => void;
+  onPickBuilding: (b: Catalog["buildings"][number]) => void;
 }) {
   const q = query.trim().toLowerCase();
-  const shown = q ? buildings.filter((b) => b.name_th.toLowerCase().includes(q)) : buildings;
+  const matches = q ? buildings.filter((b) => b.name_th.toLowerCase().includes(q) || facultyName(b).toLowerCase().includes(q)) : [];
   return (
     <div className="space-y-3">
-      {buildings.length > 8 ? (
-        <Input
-          type="search"
-          value={query}
-          onChange={(e) => onQuery(e.target.value)}
-          placeholder="ค้นหาอาคาร เช่น CAMT, RB5, หอสมุด"
-          aria-label="ค้นหาอาคาร"
-          enterKeyHint="search"
-        />
-      ) : null}
-      {shown.length ? (
-        <GroupedList title="อาคาร">
-          {shown.map((b) => (
-            <GroupedRow key={b.id} label={b.name_th} chevron onClick={() => onPick(b.id)} />
+      <Input
+        type="search"
+        value={query}
+        onChange={(e) => onQuery(e.target.value)}
+        placeholder="ค้นหาอาคาร เช่น CAMT, RB5, หอสมุด"
+        aria-label="ค้นหาอาคาร"
+        enterKeyHint="search"
+      />
+      {!q ? (
+        <GroupedList title="คณะหรือหน่วยงาน">
+          {facultiesOf(buildings).map((f) => (
+            <GroupedRow key={f.name} label={f.name} detail={`${f.count} อาคาร`} chevron onClick={() => onPickFaculty(f.name)} />
+          ))}
+        </GroupedList>
+      ) : matches.length ? (
+        <GroupedList title="อาคารที่ค้นพบ">
+          {matches.map((b) => (
+            <GroupedRow key={b.id} label={b.name_th} detail={facultyName(b)} chevron onClick={() => onPickBuilding(b)} />
           ))}
         </GroupedList>
       ) : (

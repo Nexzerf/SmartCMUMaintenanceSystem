@@ -203,7 +203,7 @@ export async function findDuplicate(roomId: number, categoryId: number, excludeR
 export type Catalog = {
   categories: { id: number; name_th: string; icon: string; is_active: boolean }[];
   campuses: { id: number; name_th: string }[];
-  buildings: { id: number; campus_id: number; name_th: string }[];
+  buildings: { id: number; campus_id: number; name_th: string; faculty_th: string | null }[];
   rooms: { id: number; building_id: number; floor: number; name_th: string }[];
 };
 
@@ -211,7 +211,12 @@ async function loadCatalog(includeInactive: boolean): Promise<Catalog> {
   const [categories, campuses, buildings, rooms] = await runQueries([
     () => sql<Catalog["categories"]>`select id, name_th, icon, is_active from categories ${includeInactive ? sql`` : sql`where is_active`} order by sort_order, id`,
     () => sql<Catalog["campuses"]>`select id, name_th from campuses order by id`,
-    () => sql<Catalog["buildings"]>`select id, campus_id, name_th from buildings order by name_th`,
+    () =>
+      sql<Catalog["buildings"]>`select id, campus_id, name_th, faculty_th from buildings order by name_th`.catch((err: { code?: string }) => {
+        // Database not migrated yet (no faculty_th column): keep working, every building lands in "อื่น ๆ".
+        if (err?.code !== "42703") throw err;
+        return sql<Catalog["buildings"]>`select id, campus_id, name_th, null::text as faculty_th from buildings order by name_th`;
+      }),
     () => sql<Catalog["rooms"]>`select id, building_id, floor, name_th from rooms order by floor, name_th`,
   ]);
   return { categories, campuses, buildings, rooms };

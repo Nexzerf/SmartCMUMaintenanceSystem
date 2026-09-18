@@ -342,6 +342,15 @@ export const LOCATIONS: CampusDef[] = [
       { name: "คณะเกษตรศาสตร์ โรงทดลอง", rooms: GENERIC_AREAS },
       { name: "คณะเกษตรศาสตร์ โรงช่าง", rooms: GENERIC_AREAS },
 
+      // ICDI occupies floor 3 of the University Administration Building 3 (CMU Open House, faculty page).
+      {
+        name: "ICDI วิทยาลัยนานาชาตินวัตกรรมดิจิทัล (อาคารสำนักงานมหาวิทยาลัย 3)",
+        rooms: [
+          ...onFloor(1, "โถงและพื้นที่ส่วนกลาง", "ห้องน้ำ", "ภายนอกอาคาร"),
+          ...onFloor(3, "วิทยาลัยนานาชาตินวัตกรรมดิจิทัล (ICDI) ชั้น 3", "ห้องน้ำ ชั้น 3"),
+        ],
+      },
+
       // Other real buildings from the campus map (no room list: generic areas)
       { name: "สำนักหอสมุด (Main Library)", rooms: GENERIC_AREAS },
       { name: "ITSC สำนักบริการเทคโนโลยีสารสนเทศ", rooms: GENERIC_AREAS },
@@ -445,6 +454,42 @@ export const LEGACY_ROOMS: { building: string; from: string; to: string }[] = [
   { building: "ECB2 คณะเศรษฐศาสตร์ อาคาร 2", from: "EC2201", to: "ECB2201" },
   { building: "คณะสังคมศาสตร์ อาคารปฏิบัติการ (อาคาร 04107)", from: "ห้องประชุมย่อย Subaltern Room (ชั้นใต้ดิน)", to: "ห้องประชุมย่อย (Subaltern Room)" },
 ];
+
+/**
+ * Faculty or unit a building belongs to: the reporter picks it between campus and building.
+ * First matching rule wins; anything unmatched is a central facility.
+ */
+export const CENTRAL_FACILITIES = "หน่วยงานส่วนกลางและสิ่งอำนวยความสะดวก";
+const FACULTY_RULES: [RegExp, string][] = [
+  [/^RB\d|^TLIC /, "อาคารเรียนรวม (ส่วนกลาง)"],
+  [/^HB\d/, "คณะมนุษยศาสตร์"],
+  [/^BAB\d/, "คณะบริหารธุรกิจ"],
+  [/^SB\d|คณะสังคมศาสตร์/, "คณะสังคมศาสตร์"],
+  [/^ECB\d/, "คณะเศรษฐศาสตร์"],
+  [/^LB\d/, "คณะนิติศาสตร์"],
+  [/^PSB\d/, "คณะรัฐศาสตร์และรัฐประศาสนศาสตร์"],
+  [/^EB\d|คณะศึกษาศาสตร์|โรงเรียนสาธิต/, "คณะศึกษาศาสตร์"],
+  [/^MCB\d/, "คณะการสื่อสารมวลชน"],
+  [/^(SCB\d|MB2|STB|PB1|CB1|BB1|CSB) /, "คณะวิทยาศาสตร์"],
+  [/^(ENG\d? |CE |EE |ME |IE )|วิศวกรรม/, "คณะวิศวกรรมศาสตร์"],
+  [/^CAMT /, "วิทยาลัยศิลปะ สื่อ และเทคโนโลยี (CAMT)"],
+  [/^ICDI /, "วิทยาลัยนานาชาตินวัตกรรมดิจิทัล (ICDI)"],
+  [/^Architecture /, "คณะสถาปัตยกรรมศาสตร์"],
+  [/^AB\d|คณะเกษตรศาสตร์/, "คณะเกษตรศาสตร์"],
+  [/^หอพักนักศึกษา(ชาย|หญิง) /, "หอพักนักศึกษา"],
+  [/คณะแพทยศาสตร์/, "คณะแพทยศาสตร์"],
+  [/คณะทันตแพทยศาสตร์/, "คณะทันตแพทยศาสตร์"],
+  [/^PHARM\d/, "คณะเภสัชศาสตร์"],
+  [/^NUR\d|พยาบาล/, "คณะพยาบาลศาสตร์"],
+  [/^AMS /, "คณะเทคนิคการแพทย์"],
+  [/คณะสาธารณสุขศาสตร์/, "คณะสาธารณสุขศาสตร์"],
+  [/^AGI\d|คณะอุตสาหกรรมเกษตร/, "คณะอุตสาหกรรมเกษตร"],
+  [/^VET /, "คณะสัตวแพทยศาสตร์"],
+];
+
+export function facultyOf(buildingName: string): string {
+  return FACULTY_RULES.find(([re]) => re.test(buildingName))?.[1] ?? CENTRAL_FACILITIES;
+}
 
 export function roomName(r: RoomDef): string {
   return typeof r === "string" ? r : r.name;

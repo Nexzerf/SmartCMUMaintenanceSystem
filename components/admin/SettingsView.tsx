@@ -2,7 +2,7 @@
 
 import { ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { Fragment, useMemo, useState, useTransition } from "react";
 import { deleteCategory, deleteLocation, saveBuilding, saveCampus, saveCategory, saveRoom, saveTechnician } from "@/app/actions/settings";
 import { Button } from "@/components/ui/Button";
 import { CATEGORY_ICONS, CategoryIcon } from "@/components/ui/CategoryIcon";
@@ -11,6 +11,7 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Sheet } from "@/components/ui/Sheet";
 import { Pill } from "@/components/ui/StatusPill";
 import { cn } from "@/lib/cn";
+import { facultiesOf, facultyName } from "@/lib/faculties";
 import { floorLabel, formatPhone } from "@/lib/format";
 import type { Catalog } from "@/lib/requests/queries";
 
@@ -19,7 +20,7 @@ type Tech = { id: string; username: string; full_name: string; phone: string | n
 type Editor =
   | { kind: "category"; id?: number; name_th: string; icon: string; is_active: boolean }
   | { kind: "campus"; id?: number; name_th: string }
-  | { kind: "building"; id?: number; campus_id: number; name_th: string }
+  | { kind: "building"; id?: number; campus_id: number; name_th: string; faculty_th: string }
   | { kind: "room"; id?: number; building_id: number; floor: string; name_th: string }
   | { kind: "tech"; id?: string; username: string; full_name: string; phone: string; password: string; is_active: boolean; skills: number[] };
 
@@ -81,11 +82,16 @@ export function SettingsView({ catalog, technicians }: { catalog: Catalog; techn
   const [tab, setTab] = useState<"categories" | "locations" | "techs">("categories");
   const [campusId, setCampusId] = useState<number | null>(catalog.campuses[0]?.id ?? null);
   const [buildingId, setBuildingId] = useState<number | null>(null);
+  const [facultyFilter, setFacultyFilter] = useState("");
   const [editor, setEditor] = useState<Editor | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  const buildings = catalog.buildings.filter((b) => b.campus_id === campusId);
+  const campusBuildings = catalog.buildings.filter((b) => b.campus_id === campusId);
+  const faculties = facultiesOf(campusBuildings);
+  const buildings = campusBuildings.filter((b) => !facultyFilter || facultyName(b) === facultyFilter);
+  // Every faculty name in use, offered as suggestions when editing a building.
+  const allFaculties = [...new Set(catalog.buildings.map((b) => b.faculty_th).filter((f): f is string => !!f))].sort((a, b) => a.localeCompare(b, "th"));
   const rooms = useMemo(() => catalog.rooms.filter((r) => r.building_id === buildingId).sort((a, b) => a.floor - b.floor || a.name_th.localeCompare(b.name_th, "th")), [catalog.rooms, buildingId]);
   const catName = (id: number) => catalog.categories.find((c) => c.id === id)?.name_th ?? "";
 
@@ -117,7 +123,7 @@ export function SettingsView({ catalog, technicians }: { catalog: Catalog; techn
       case "campus":
         return run(() => saveCampus({ id: editor.id, name_th: editor.name_th }));
       case "building":
-        return run(() => saveBuilding({ id: editor.id, campus_id: editor.campus_id, name_th: editor.name_th }));
+        return run(() => saveBuilding({ id: editor.id, campus_id: editor.campus_id, name_th: editor.name_th, faculty_th: editor.faculty_th }));
       case "room":
         return run(() => saveRoom({ id: editor.id, building_id: editor.building_id, floor: Number(editor.floor), name_th: editor.name_th }));
       case "tech":
@@ -175,22 +181,57 @@ export function SettingsView({ catalog, technicians }: { catalog: Catalog; techn
                   onSelect={() => {
                     setCampusId(c.id);
                     setBuildingId(null);
+                    setFacultyFilter("");
                   }}
                   onEdit={() => open({ kind: "campus", id: c.id, name_th: c.name_th })}
                 />
               ))}
             </Column>
-            <Column title="อาคาร" addLabel="เพิ่ม" onAdd={campusId ? () => open({ kind: "building", campus_id: campusId, name_th: "" }) : undefined}>
+            <Column
+              title="อาคาร"
+              addLabel="เพิ่ม"
+              onAdd={campusId ? () => open({ kind: "building", campus_id: campusId, name_th: "", faculty_th: facultyFilter }) : undefined}
+            >
+              {campusBuildings.length ? (
+                <li className="px-4 pb-2 pt-1">
+                  <label htmlFor="fac-filter" className="sr-only">
+                    กรองตามคณะหรือหน่วยงาน
+                  </label>
+                  <select
+                    id="fac-filter"
+                    value={facultyFilter}
+                    onChange={(e) => {
+                      setFacultyFilter(e.target.value);
+                      setBuildingId(null);
+                    }}
+                    className="min-h-11 w-full rounded-[12px] bg-page px-3 text-[15px] outline-none focus:ring-2 focus:ring-brand"
+                  >
+                    <option value="">ทุกคณะและหน่วยงาน ({campusBuildings.length} อาคาร)</option>
+                    {faculties.map((f) => (
+                      <option key={f.name} value={f.name}>
+                        {f.name} ({f.count})
+                      </option>
+                    ))}
+                  </select>
+                </li>
+              ) : null}
               {buildings.length ? (
-                buildings.map((b) => (
-                  <Row
-                    key={b.id}
-                    label={b.name_th}
-                    detail={`${catalog.rooms.filter((r) => r.building_id === b.id).length} ห้อง`}
-                    selected={buildingId === b.id}
-                    onSelect={() => setBuildingId(b.id)}
-                    onEdit={() => open({ kind: "building", id: b.id, campus_id: b.campus_id, name_th: b.name_th })}
-                  />
+                (facultyFilter ? [{ name: facultyFilter }] : faculties).map((f) => (
+                  <Fragment key={f.name}>
+                    {!facultyFilter ? <li className="bg-page px-4 py-1.5 text-[13px] font-semibold text-muted">{f.name}</li> : null}
+                    {buildings
+                      .filter((b) => facultyName(b) === f.name)
+                      .map((b) => (
+                        <Row
+                          key={b.id}
+                          label={b.name_th}
+                          detail={`${catalog.rooms.filter((r) => r.building_id === b.id).length} ห้อง`}
+                          selected={buildingId === b.id}
+                          onSelect={() => setBuildingId(b.id)}
+                          onEdit={() => open({ kind: "building", id: b.id, campus_id: b.campus_id, name_th: b.name_th, faculty_th: b.faculty_th ?? "" })}
+                        />
+                      ))}
+                  </Fragment>
                 ))
               ) : (
                 <li className="px-4 py-6 text-sm text-muted">{campusId ? "ยังไม่มีอาคารในวิทยาเขตนี้" : "เลือกวิทยาเขตก่อน"}</li>
@@ -314,6 +355,29 @@ export function SettingsView({ catalog, technicians }: { catalog: Catalog; techn
                         </option>
                       ))}
                     </select>
+                  </div>
+                ) : null}
+                {editor.kind === "building" ? (
+                  <div>
+                    <Label htmlFor="ed-faculty" optional>
+                      คณะหรือหน่วยงาน
+                    </Label>
+                    <Input
+                      id="ed-faculty"
+                      list="faculty-options"
+                      value={editor.faculty_th}
+                      onChange={(e) => patch({ faculty_th: e.target.value })}
+                      placeholder="เช่น คณะวิศวกรรมศาสตร์"
+                      aria-describedby="ed-faculty-hint"
+                    />
+                    <datalist id="faculty-options">
+                      {allFaculties.map((f) => (
+                        <option key={f} value={f} />
+                      ))}
+                    </datalist>
+                    <p id="ed-faculty-hint" className="mt-1 text-[13px] text-muted">
+                      ผู้แจ้งเลือกคณะก่อนแล้วจึงเห็นอาคาร ถ้าเว้นว่าง อาคารจะอยู่ในกลุ่ม “อื่น ๆ”
+                    </p>
                   </div>
                 ) : null}
                 {editor.kind === "room" ? (

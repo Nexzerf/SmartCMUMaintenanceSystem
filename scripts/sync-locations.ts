@@ -13,7 +13,7 @@
  */
 import "./env";
 import postgres from "postgres";
-import { LEGACY_BUILDINGS, LEGACY_ROOMS, LOCATIONS, roomFloor, roomName } from "../db/locations";
+import { facultyOf, LEGACY_BUILDINGS, LEGACY_ROOMS, LOCATIONS, roomFloor, roomName } from "../db/locations";
 
 type Room = { id: number; name_th: string; floor: number };
 
@@ -55,6 +55,7 @@ async function main() {
 
   try {
     await sql.begin(async (tx) => {
+      await tx`alter table buildings add column if not exists faculty_th text`;
       const campusByName = new Map<string, number>();
       for (const c of LOCATIONS) {
         let [row] = await tx<{ id: number }[]>`select id from campuses where name_th = ${c.name}`;
@@ -99,12 +100,14 @@ async function main() {
       const roomsOf = new Map<string, Room[]>();
       for (const c of LOCATIONS) {
         for (const b of c.buildings) {
-          let [bRow] = await tx<{ id: number; campus_id: number }[]>`select id, campus_id from buildings where name_th = ${b.name}`;
+          const faculty = facultyOf(b.name);
+          let [bRow] = await tx<{ id: number; campus_id: number; faculty_th: string | null }[]>`select id, campus_id, faculty_th from buildings where name_th = ${b.name}`;
           if (!bRow) {
-            [bRow] = await tx<{ id: number; campus_id: number }[]>`insert into buildings (campus_id, name_th) values (${campusOf.get(b.name)!}, ${b.name}) returning id, campus_id`;
+            [bRow] = await tx<{ id: number; campus_id: number; faculty_th: string | null }[]>`
+              insert into buildings (campus_id, name_th, faculty_th) values (${campusOf.get(b.name)!}, ${b.name}, ${faculty}) returning id, campus_id, faculty_th`;
             stats.buildingsAdded++;
-          } else if (bRow.campus_id !== campusOf.get(b.name)) {
-            await tx`update buildings set campus_id = ${campusOf.get(b.name)!} where id = ${bRow.id}`;
+          } else if (bRow.campus_id !== campusOf.get(b.name) || bRow.faculty_th !== faculty) {
+            await tx`update buildings set campus_id = ${campusOf.get(b.name)!}, faculty_th = ${faculty} where id = ${bRow.id}`;
           }
           for (const rn of LEGACY_ROOMS.filter((x) => x.building === b.name)) {
             const renamed = await tx`update rooms set name_th = ${rn.to} where building_id = ${bRow.id} and name_th = ${rn.from}

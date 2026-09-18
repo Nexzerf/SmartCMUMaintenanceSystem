@@ -1339,7 +1339,7 @@ function formScreen(key, title, action) {
 }
 
 function R04() {
-  const s = formScreen("R04", "แจ้งซ่อม ขั้นที่ 1 ปัญหา", ["ถัดไป", "R05"]);
+  const s = formScreen("R04", "แจ้งซ่อม ขั้นที่ 1 ปัญหา", ["ถัดไป", "R05a"]);
   formTop(s.col, 1, "ปัญหา", "ยกเลิก", "R03");
   const b = body(s.col, { gap: 20 });
   stepTitle(b, "เกิดปัญหาอะไร", "เลือกประเภทที่ใกล้เคียงที่สุด");
@@ -1363,8 +1363,9 @@ function crumb(parent, label, active) {
   return c;
 }
 
-function R05() {
-  const s = formScreen("R05", "แจ้งซ่อม ขั้นที่ 2 สถานที่", ["ถัดไป", "R06"]);
+// Step 2 starts with the faculty or unit, so a campus with 100+ buildings is a short list.
+function R05a() {
+  const s = formScreen("R05a", "แจ้งซ่อม ขั้นที่ 2 เลือกคณะ", ["ถัดไป", "R05"]);
   formTop(s.col, 2, "สถานที่", "ย้อนกลับ", "R04");
   const b = body(s.col, { gap: 18 });
   stepTitle(b, "พบปัญหาที่ไหน", "เลือกทีละขั้นจนถึงห้อง");
@@ -1372,9 +1373,30 @@ function R05() {
   put(b, cr, { fillW: true });
   crumb(cr, "วิทยาเขต");
   icon(cr, "chevron-right", 14, "muted");
-  crumb(cr, "สวนสัก");
+  crumb(cr, "สวนสัก", true);
+  input(b, { placeholder: "ค้นหาอาคาร เช่น CAMT, RB5, หอสมุด", leading: "search" });
+  const list = groupList(b, "คณะหรือหน่วยงาน");
+  listRow(list, { label: "คณะเศรษฐศาสตร์", detail: "3 อาคาร", chevron: true });
+  listRow(list, { label: "คณะวิศวกรรมศาสตร์", detail: "27 อาคาร", chevron: true });
+  listRow(list, { label: "คณะสังคมศาสตร์", detail: "8 อาคาร", chevron: true });
+  listRow(list, { label: "วิทยาลัยนานาชาตินวัตกรรมดิจิทัล (ICDI)", detail: "1 อาคาร", chevron: true });
+  listRow(list, { label: "วิทยาลัยศิลปะ สื่อ และเทคโนโลยี (CAMT)", detail: "1 อาคาร · ไปที่ชั้นทันที", chevron: true, to: "R05" });
+  listRow(list, { label: "อาคารเรียนรวม (ส่วนกลาง)", detail: "5 อาคาร", chevron: true, last: true });
+  return finish(s);
+}
+
+function R05() {
+  const s = formScreen("R05", "แจ้งซ่อม ขั้นที่ 2 สถานที่", ["ถัดไป", "R06"]);
+  formTop(s.col, 2, "สถานที่", "ย้อนกลับ", "R05a");
+  const b = body(s.col, { gap: 18 });
+  stepTitle(b, "พบปัญหาที่ไหน", "เลือกทีละขั้นจนถึงห้อง");
+  const cr = box({ name: "Breadcrumbs", dir: "h", gap: 4, cross: "CENTER", clip: true });
+  put(b, cr, { fillW: true });
+  crumb(cr, "วิทยาเขต");
   icon(cr, "chevron-right", 14, "muted");
-  crumb(cr, CAMT);
+  link(crumb(cr, "สวนสัก"), "R05a");
+  icon(cr, "chevron-right", 14, "muted");
+  crumb(cr, "CAMT");
   icon(cr, "chevron-right", 14, "muted");
   crumb(cr, "ชั้น 3", true);
   const list = groupList(b, "ห้อง");
@@ -2427,7 +2449,7 @@ function A04c() {
 
 const REPORTER = [
   function () { return loginScreen("R01", "R02", "R01b", "anan.s"); },
-  R01b, R02, R03, R04, R05, R05b, R06, R07, R08, R09, R09b, R10, R11, R12, R13, R14, R15,
+  R01b, R02, R03, R04, R05a, R05, R05b, R06, R07, R08, R09, R09b, R10, R11, R12, R13, R14, R15,
 ];
 const TECH = [
   function () { return loginScreen("T00", "T01", null, "tech01"); },
