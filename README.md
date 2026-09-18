@@ -70,6 +70,7 @@ Passwords are bcrypt hashes. Never type a password into `users.password_hash` di
 | `npm run db:seed` | Seed master data, demo accounts, ~40 requests over the last 60 days |
 | `npm run db:reset` | Drop, migrate, and seed |
 | `npm run db:sync-locations` | Apply `db/locations.ts` (real CMU buildings and rooms) to an existing database; moves requests off removed rooms. `-- --dry` to preview |
+| `npx tsx scripts/export-locations-sql.ts` | Write `db/locations-sync.sql` for the Supabase SQL Editor (renames and additions only, safe to re-run) |
 | `npm run db:export-sql` | Write `db/supabase-setup.sql` (schema + current data) for the Supabase SQL Editor |
 | `npx tsx --conditions=react-server scripts/check-flow.ts` | Automated state-machine check (creates and deletes a throwaway request) |
 | `npx tsx --conditions=react-server scripts/demo-step.ts <code> assign <tech>` \| `in_progress` \| `completed` | Drive a request from the terminal during a demo |

@@ -1,7 +1,8 @@
 /**
  * Campuses, buildings and rooms of Chiang Mai University used by the app.
  *
- * Sources: room lists supplied by the project team, checked against the CMU campus map
+ * Sources: room lists supplied by the project team; SOCMAP 2026 (Faculty of Social Sciences student
+ * organization), ENTANEER MAP (Faculty of Engineering) and the Faculty of Nursing map; checked against the CMU campus map
  * (Google My Maps "Chiang Mai University Buildings") for building codes. Where the map's code differs
  * from the supplied list (e.g. Education = EB1–EB4, Economics = ECB1–ECB2, Law = LB1), the building uses
  * the map code and the room names are kept exactly as supplied.
@@ -37,6 +38,7 @@ function onFloor(floor: number, ...names: string[]): RoomDef[] {
 
 const GENERIC_AREAS: RoomDef[] = onFloor(1, "โถงและพื้นที่ส่วนกลาง", "ห้องน้ำ", "ภายนอกอาคาร");
 const DORM_AREAS: RoomDef[] = onFloor(1, "ห้องพัก (ระบุชั้นและเลขห้องในจุดสังเกต)", "ห้องน้ำรวม", "โถงและพื้นที่ส่วนกลาง", "ภายนอกอาคาร");
+const OUTDOOR_AREAS: RoomDef[] = onFloor(1, "พื้นที่ลานและทางเดิน", "ไฟส่องสว่าง", "ม้านั่งและสิ่งอำนวยความสะดวก");
 
 export const LOCATIONS: CampusDef[] = [
   {
@@ -76,8 +78,60 @@ export const LOCATIONS: CampusDef[] = [
         rooms: ["BAB1101", "BAB1102", ...onFloor(1, "ห้องประชุม"), "BAB1201", "BAB1202", "BAB1203", "BAB1301", "BAB1302", "BAB1321", "BAB1322", "BAB1323"],
       },
       { name: "BAB2 คณะบริหารธุรกิจ", rooms: ["BAB2101", "BAB2102", "BAB2201", "BAB2202", "BAB2203", "BAB2301", "BAB2302"] },
-      { name: "SB1 คณะสังคมศาสตร์", rooms: ["SB1111", "SB1114", "SB1115", "SB1122", "SB1201", "SB1202", "SB1301"] },
-      { name: "SB2 คณะสังคมศาสตร์", rooms: ["SB2101", "SB2102", "SB2201", "SB2202", "SB2301"] },
+      // Faculty of Social Sciences: SOCMAP 2026 by the faculty student organization.
+      // Building numbers 1–4 match the room codes SB1xxx–SB4xxx.
+      {
+        name: "SB1 คณะสังคมศาสตร์ อาคาร 1 ภูมิศาสตร์ (ฝั่งหน้า)",
+        rooms: [
+          "SB1111", "SB1114", "SB1115", "SB1122", "SB1201", "SB1202", "SB1301",
+          ...onFloor(1, "สำนักงานคณะสังคมศาสตร์", "ห้องคณบดีคณะสังคมศาสตร์", "ห้องประชุม ธนี พหลโยธิน", "งานบริหารงานวิจัย บริการวิชาการ และวิเทศสัมพันธ์",
+            "งานบริการการศึกษาและพัฒนาคุณภาพนักศึกษา", "งานนโยบายและแผนประกันคุณภาพการศึกษา", "งานบริหารทั่วไป", "งานการเงิน การคลัง และพัสดุ"),
+          ...onFloor(2, "สำนักงานภาควิชาภูมิศาสตร์", "ห้องพักคณาจารย์ภูมิศาสตร์ ชั้น 2"),
+          ...onFloor(3, "ห้องพักคณาจารย์ภูมิศาสตร์ ชั้น 3", "ห้องประชุมภาควิชาภูมิศาสตร์"),
+        ],
+      },
+      {
+        name: "SB1 คณะสังคมศาสตร์ อาคาร 1 ภูมิศาสตร์ (ปีกตะวันออก)",
+        rooms: [
+          ...onFloor(1, "ห้องสมุดคณะสังคมศาสตร์"),
+          ...onFloor(2, "ห้องเรียนนักศึกษาปริญญาโท สาขาวิชาภูมิศาสตร์", "ห้องสมุดแผนที่"),
+          ...onFloor(3, "ศูนย์ภูมิภาคเทคโนโลยีอวกาศและภูมิสารสนเทศภาคเหนือ", "ห้องเรียนปฏิบัติการภาควิชาภูมิศาสตร์"),
+        ],
+      },
+      {
+        name: "SB2 คณะสังคมศาสตร์ อาคาร 2 ภาควิชาสังคมศาสตร์กับการพัฒนา",
+        rooms: [
+          "SB2101", "SB2102", "SB2201", "SB2202", "SB2301",
+          ...onFloor(1, "สำนักงานภาควิชาสังคมศาสตร์กับการพัฒนา"),
+          ...onFloor(2, "ห้องพักคณาจารย์ ชั้น 2"),
+          ...onFloor(3, "ห้องพักคณาจารย์ ชั้น 3"),
+        ],
+      },
+      {
+        name: "SB3 คณะสังคมศาสตร์ อาคาร 3 ภาควิชาสังคมวิทยาและมานุษยวิทยา",
+        rooms: [
+          ...onFloor(1, "ร้านถ่ายเอกสาร", "ห้อง Co-Working Space"),
+          ...onFloor(2, "ห้องประชุมใหญ่คณะสังคมศาสตร์", "ห้องโครงการหลักสูตรนานาชาติ ระดับปริญญาเอก", "ห้องประชุมสาขาวิชา ปริญญาเอก"),
+          ...seq("SB", 3201, 3211),
+          ...onFloor(3, "ห้องภาควิชาสังคมวิทยาและมานุษยวิทยา", "สำนักงานสาขาสังคมวิทยาและมานุษยวิทยา", "ห้องพักคณาจารย์สาขาสังคมวิทยาและมานุษยวิทยา ชั้น 3", "ห้องประชุมบัณฑิต"),
+          ...onFloor(4, "ห้องประชุมชั้น 4", "ศูนย์ข้อมูลภาควิชาสังคมวิทยาและมานุษยวิทยา", "ห้องพักนักศึกษาปริญญาโทสังคมวิทยา", "ห้องพักคณาจารย์สาขาสังคมวิทยา ชั้น 4"),
+        ],
+      },
+      {
+        name: "SB4 คณะสังคมศาสตร์ อาคาร 4 อาคารเรียนรวม",
+        rooms: [...seq("SB", 4105, 4107), ...seq("SB", 4201, 4204), ...seq("SB", 4301, 4303), ...seq("SB", 4401, 4403), ...seq("SB", 4408, 4411)],
+      },
+      {
+        name: "คณะสังคมศาสตร์ อาคารปฏิบัติการ (อาคาร 04107)",
+        rooms: [
+          ...onFloor(1, "ห้องประชุมย่อย Subaltern Room (ชั้นใต้ดิน)", "สโมสรนักศึกษาคณะสังคมศาสตร์"),
+          ...onFloor(2, "ห้องเรียน RCSD", "ศูนย์จีนศึกษา", "ห้องพักคณาจารย์", "ห้องปฏิบัติการคดีอาญา", "ห้องทดลองปฏิบัติการทางการพิสูจน์หลักฐาน", "ห้องโปลีกราฟ"),
+          ...onFloor(3, "สมาคมนักศึกษาเก่าคณะสังคมศาสตร์", "ห้อง ITSC Corner", "หน่วยเทคโนโลยีสารสนเทศ", "ห้องประชุมศูนย์วิจัย"),
+          ...onFloor(4, "ห้องประชุมคณะสังคมศาสตร์ (04-003)", "ศูนย์ศึกษาชาติพันธุ์และการพัฒนา", "ศูนย์ภูมิอากาศเพื่อการศึกษาด้านภูมิอากาศและสิ่งแวดล้อม (RCCES)"),
+        ],
+      },
+      { name: "คณะสังคมศาสตร์ International Building", rooms: GENERIC_AREAS },
+      { name: "คณะสังคมศาสตร์ โรงอาหาร (SOC Cafeteria)", rooms: GENERIC_AREAS },
       { name: "ECB1 คณะเศรษฐศาสตร์", rooms: ["EC1101", "EC1102", "EC1201", "EC1202", "EC1301"] },
       { name: "ECB2 คณะเศรษฐศาสตร์", rooms: ["EC2101", "EC2102", "EC2201", ...onFloor(1, "ห้องศาลาเศรษฐศาสตร์")] },
       { name: "LB1 คณะนิติศาสตร์", rooms: ["LAW1101", "LAW1201", "LAW1202", "LAW2101", "LAW2201", ...onFloor(1, "ห้อง Moot Court")] },
@@ -100,12 +154,55 @@ export const LOCATIONS: CampusDef[] = [
       { name: "ENG คณะวิศวกรรมศาสตร์", rooms: ["ENG1101", "ENG1201"] },
       { name: "ENG2 คณะวิศวกรรมศาสตร์", rooms: ["ENG2101", "ENG2102", "ENG2201"] },
       { name: "ENG3 คณะวิศวกรรมศาสตร์", rooms: ["ENG3101", "ENG3201"] },
-      { name: "ENG4 คณะวิศวกรรมศาสตร์ (4 ชั้น)", rooms: ["ENG4101", "ENG4102", "ENG4201", "ENG4202", "ENG4301", "ENG4302"] },
-      { name: "CE ภาควิชาวิศวกรรมโยธา", rooms: ["CE101", "CE201", "CE202"] },
-      { name: "EE ภาควิชาวิศวกรรมไฟฟ้า", rooms: ["EE101", "EE201", "EE202", "EE301"] },
-      { name: "ME ภาควิชาวิศวกรรมเครื่องกล", rooms: ["ME101", "ME201", "ME301"] },
-      { name: "IE ภาควิชาวิศวกรรมอุตสาหการ", rooms: ["IE101", "IE201", "IE301"] },
-      { name: "CPE ภาควิชาวิศวกรรมคอมพิวเตอร์", rooms: named("CPE Lab", 1, 4) },
+      // Faculty of Engineering: ENTANEER MAP (numbers in the comments are the map numbers).
+      {
+        name: "ENG4 คณะวิศวกรรมศาสตร์ อาคารเรียน 4 ชั้น", // 10
+        rooms: [
+          "ENG4101", "ENG4102", "ENG4201", "ENG4202", "ENG4301", "ENG4302",
+          ...onFloor(1, "Robotics & AI Engineering ชั้น 1", "Integrated Engineering ชั้น 1", "สโมสรนักศึกษาคณะวิศวกรรมศาสตร์ (Entaneer Student Club)"),
+          ...onFloor(2, "Robotics & AI Engineering ชั้น 2", "Integrated Engineering ชั้น 2"),
+        ],
+      },
+      {
+        name: "คณะวิศวกรรมศาสตร์ อาคาร 30 ปี", // 2; Computer Engineering on floors 4–5
+        rooms: [
+          ...onFloor(1, "AU Choix", "Puenplay Cafe", "Easy Corner", "โถงและพื้นที่ส่วนกลาง", "ห้องน้ำ"),
+          ...onFloor(2, "Chiang Mai International Engineering School (CM-IES)", "ห้อง 204 ITSC"),
+          ...onFloor(4, "ภาควิชาวิศวกรรมคอมพิวเตอร์ ชั้น 4"),
+          ...named("CPE Lab", 1, 4, 4),
+          ...onFloor(5, "ภาควิชาวิศวกรรมคอมพิวเตอร์ ชั้น 5"),
+          ...onFloor(6, "สำนักงานคณบดี คณะวิศวกรรมศาสตร์", "สำนักงานคณะวิศวกรรมศาสตร์"),
+        ],
+      },
+      {
+        name: "คณะวิศวกรรมศาสตร์ อาคารเรียน 3 ชั้น", // 9
+        rooms: [
+          ...onFloor(1, "งานบริการการศึกษา", "Roasto @Entaneer"),
+          ...onFloor(2, "หน่วยพัฒนาคุณภาพนักศึกษา"),
+          ...onFloor(3, "ห้องบรรยายใหญ่ (Main Lecture Hall)"),
+        ],
+      },
+      { name: "ME ภาควิชาวิศวกรรมเครื่องกล", rooms: ["ME101", "ME201", "ME301", ...onFloor(1, "ME Workshop")] }, // 1
+      { name: "CE ภาควิชาวิศวกรรมโยธา", rooms: ["CE101", "CE201", "CE202", ...onFloor(1, "ห้องปฏิบัติการวิศวกรรมชลศาสตร์ (Hydraulic Lab)")] }, // 4
+      { name: "EE ภาควิชาวิศวกรรมไฟฟ้า", rooms: ["EE101", "EE201", "EE202", "EE301"] }, // 5
+      { name: "IE ภาควิชาวิศวกรรมอุตสาหการ", rooms: ["IE101", "IE201", "IE301"] }, // 7
+      { name: "ภาควิชาวิศวกรรมเหมืองแร่และปิโตรเลียม", rooms: GENERIC_AREAS }, // 6
+      { name: "ภาควิชาวิศวกรรมสิ่งแวดล้อม", rooms: GENERIC_AREAS }, // 8
+      { name: "คณะวิศวกรรมศาสตร์ อาคาร RTT", rooms: GENERIC_AREAS }, // 3
+      { name: "คณะวิศวกรรมศาสตร์ อาคารปฏิบัติการวิศวกรรมไฟฟ้า", rooms: GENERIC_AREAS },
+      { name: "คณะวิศวกรรมศาสตร์ อาคาร Workshop", rooms: GENERIC_AREAS },
+      { name: "คณะวิศวกรรมศาสตร์ อาคารร่วมใจวิศวกรรม", rooms: [...onFloor(1, "Entaneer Academy ชั้น 1"), ...onFloor(2, "Entaneer Academy ชั้น 2")] }, // 17
+      { name: "คณะวิศวกรรมศาสตร์ ห้องสมุด (Engineering Library)", rooms: GENERIC_AREAS }, // 13
+      { name: "คณะวิศวกรรมศาสตร์ โรงอาหาร (Engineering Canteen)", rooms: GENERIC_AREAS }, // 14
+      { name: "คณะวิศวกรรมศาสตร์ Entaneer Space", rooms: GENERIC_AREAS }, // 15
+      { name: "คณะวิศวกรรมศาสตร์ Learning Court", rooms: GENERIC_AREAS }, // 16
+      { name: "คณะวิศวกรรมศาสตร์ E-SIE Hub", rooms: GENERIC_AREAS }, // 18
+      { name: "คณะวิศวกรรมศาสตร์ อาคาร Chotmanotum (Mini Learning Factory)", rooms: GENERIC_AREAS }, // 20
+      { name: "คณะวิศวกรรมศาสตร์ Home of Alumni", rooms: onFloor(1, "สมาคมศิษย์เก่า (Alumni Association)", "Gear Cafe", "ห้องน้ำ", "ภายนอกอาคาร") }, // 21
+      { name: "คณะวิศวกรรมศาสตร์ อาคาร Ritta", rooms: GENERIC_AREAS }, // 22
+      { name: "คณะวิศวกรรมศาสตร์ ลานพระนารายณ์ (Lord Vishnu Courtyard)", rooms: OUTDOOR_AREAS }, // 11
+      { name: "คณะวิศวกรรมศาสตร์ Gear Playground", rooms: OUTDOOR_AREAS }, // 12
+      { name: "คณะวิศวกรรมศาสตร์ Cover Way (ทางเดินมีหลังคา)", rooms: OUTDOOR_AREAS }, // 19
       {
         name: "CAMT วิทยาลัยศิลปะ สื่อ และเทคโนโลยี",
         rooms: [
@@ -158,6 +255,15 @@ export const LOCATIONS: CampusDef[] = [
       { name: "NUR1 คณะพยาบาลศาสตร์ อาคาร 1", rooms: ["NUR1101", "NUR1201", ...onFloor(1, "Simulation Ward")] },
       { name: "NUR2 คณะพยาบาลศาสตร์ อาคาร 2", rooms: ["NUR2101", "NUR2201"] },
       { name: "NUR3 คณะพยาบาลศาสตร์ อาคาร 3", rooms: ["NUR3101"] },
+      // Faculty of Nursing map: Building 4, NT Building, nursing dormitories and the faculty garage.
+      { name: "NUR4 คณะพยาบาลศาสตร์ อาคาร 4", rooms: GENERIC_AREAS },
+      { name: "คณะพยาบาลศาสตร์ อาคาร NT", rooms: GENERIC_AREAS },
+      { name: "หอพักนักศึกษาพยาบาล 1 (DORM 1)", rooms: DORM_AREAS },
+      { name: "หอพักพยาบาล 2 (DORM 2)", rooms: DORM_AREAS },
+      { name: "หอพักพยาบาล 3 (DORM 3)", rooms: DORM_AREAS },
+      { name: "หอพักพยาบาล 4 (DORM 4)", rooms: DORM_AREAS },
+      { name: "หอพักพยาบาล 6 (DORM 6)", rooms: DORM_AREAS },
+      { name: "อาคารจอดรถ คณะพยาบาลศาสตร์ (Faculty Garage Parking)", rooms: onFloor(1, "พื้นที่จอดรถ", "ห้องน้ำ", "ภายนอกอาคาร") },
       { name: "AMS คณะเทคนิคการแพทย์", rooms: ["AMS1101", "AMS1201", "AMS2101", "AMS2201", "AMS3101", ...named("AMS Lab", 1, 5)] },
       { name: "คณะสาธารณสุขศาสตร์", rooms: ["PH101", "PH102", "PH201", "PH202"] },
     ],
@@ -183,7 +289,13 @@ export const LEGACY_BUILDINGS: Record<string, string> = {
   "อาคารเรียนรวม": "RB5 อาคารเรียนรวม 5",
   "สำนักหอสมุด": "สำนักหอสมุด (Main Library)",
   "หอพักนักศึกษา 5": "หอพักนักศึกษาชาย 5",
-  "อาคารคณะวิศวกรรมศาสตร์ 30 ปี": "ENG4 คณะวิศวกรรมศาสตร์ (4 ชั้น)",
+  "อาคารคณะวิศวกรรมศาสตร์ 30 ปี": "คณะวิศวกรรมศาสตร์ อาคาร 30 ปี",
+  // Renamed with the SOCMAP 2026 and ENTANEER MAP data.
+  "SB1 คณะสังคมศาสตร์": "SB1 คณะสังคมศาสตร์ อาคาร 1 ภูมิศาสตร์ (ฝั่งหน้า)",
+  "SB2 คณะสังคมศาสตร์": "SB2 คณะสังคมศาสตร์ อาคาร 2 ภาควิชาสังคมศาสตร์กับการพัฒนา",
+  "ENG4 คณะวิศวกรรมศาสตร์ (4 ชั้น)": "ENG4 คณะวิศวกรรมศาสตร์ อาคารเรียน 4 ชั้น",
+  // Computer Engineering is on floors 4–5 of the 30th Anniversary Building, not a building of its own.
+  "CPE ภาควิชาวิศวกรรมคอมพิวเตอร์": "คณะวิศวกรรมศาสตร์ อาคาร 30 ปี",
   "อาคารคณะพยาบาลศาสตร์": "NUR1 คณะพยาบาลศาสตร์ อาคาร 1",
   "หอพักนักศึกษาแพทย์": "อาคารเรียนรวม คณะแพทยศาสตร์",
   "อาคารศูนย์ประชุม": "AGI1 คณะอุตสาหกรรมเกษตร",
