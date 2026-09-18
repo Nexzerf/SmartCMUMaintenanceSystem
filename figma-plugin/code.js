@@ -304,17 +304,28 @@ function shadow(node, y, blur, opacity) {
 
 let LINKS = [];
 let SCREENS = {};
+let WIRE_FAILED = [];
 
 function link(node, to) {
   LINKS.push({ node: node, to: to });
   return node;
 }
 
+// The screen frame a node belongs to (the frame whose parent is the page or a section).
+function screenOf(node) {
+  let n = node;
+  while (n.parent && n.parent.type !== "PAGE" && n.parent.type !== "SECTION") n = n.parent;
+  return n;
+}
+
 async function wire(page) {
   let count = 0;
+  const failed = [];
   const byNode = new Map();
   for (const l of LINKS) {
     if (!SCREENS[l.to] || l.node.removed) continue;
+    // Figma rejects NAVIGATE to the frame the click starts in (e.g. the active tab on its own screen).
+    if (screenOf(l.node) === SCREENS[l.to]) continue;
     byNode.set(l.node, l.to); // last link wins for a node
   }
   for (const entry of byNode) {
@@ -334,10 +345,17 @@ async function wire(page) {
         ],
       },
     ];
-    if (typeof node.setReactionsAsync === "function") await node.setReactionsAsync(reactions);
-    else node.reactions = reactions;
-    count++;
+    // One rejected link must not abort the whole build: skip it and report it at the end.
+    try {
+      if (typeof node.setReactionsAsync === "function") await node.setReactionsAsync(reactions);
+      else node.reactions = reactions;
+      count++;
+    } catch (err) {
+      console.warn("Skipped interaction", node.name, "→", entry[1], err);
+      failed.push(screenOf(node).name.split(" · ")[0] + " " + node.name + " → " + entry[1]);
+    }
   }
+  WIRE_FAILED = failed;
   try {
     page.flowStartingPoints = [
       { nodeId: SCREENS.R01.id, name: "1 · ผู้แจ้ง: เข้าสู่ระบบ → แจ้งซ่อม → ติดตาม" },
@@ -2222,6 +2240,9 @@ async function run(opts) {
       links = await wire(page);
     }
     summary.push(job.label + " " + Object.keys(SCREENS).length + " หน้า" + (opts.proto ? " · " + links + " เส้น" : ""));
+    if (opts.proto && WIRE_FAILED.length) {
+      summary.push(job.label + " ข้าม " + WIRE_FAILED.length + " เส้นที่ Figma ไม่รับ (" + WIRE_FAILED.slice(0, 3).join(", ") + ")");
+    }
     lastPage = page;
   }
   if (lastPage) {
