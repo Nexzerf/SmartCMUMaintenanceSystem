@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import postgres from "postgres";
 import { STATUS_LABEL, type Status } from "../lib/status";
+import { LOCATIONS, roomFloor, roomName } from "../db/locations";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL is not set");
@@ -32,34 +33,6 @@ const CATEGORIES = [
   { key: "other", name: "อื่น ๆ", icon: "Ellipsis" },
 ] as const;
 type CatKey = (typeof CATEGORIES)[number]["key"];
-
-const CAMPUSES: { name: string; buildings: { name: string; floors: number; roomsPerFloor: number; prefix?: string }[] }[] = [
-  {
-    name: "วิทยาเขตสวนสัก",
-    buildings: [
-      { name: "อาคาร CAMT", floors: 5, roomsPerFloor: 4 },
-      { name: "อาคารเรียนรวม", floors: 4, roomsPerFloor: 5 },
-      { name: "สำนักหอสมุด", floors: 3, roomsPerFloor: 3 },
-      { name: "หอพักนักศึกษา 5", floors: 4, roomsPerFloor: 4 },
-      { name: "อาคารคณะวิศวกรรมศาสตร์ 30 ปี", floors: 4, roomsPerFloor: 4 },
-    ],
-  },
-  {
-    name: "วิทยาเขตสวนดอก",
-    buildings: [
-      { name: "อาคารเรียนรวม คณะแพทยศาสตร์", floors: 4, roomsPerFloor: 4 },
-      { name: "อาคารคณะพยาบาลศาสตร์", floors: 3, roomsPerFloor: 4 },
-      { name: "หอพักนักศึกษาแพทย์", floors: 4, roomsPerFloor: 3 },
-    ],
-  },
-  {
-    name: "วิทยาเขตแม่เหียะ",
-    buildings: [
-      { name: "อาคารศูนย์ประชุม", floors: 2, roomsPerFloor: 3 },
-      { name: "อาคารปฏิบัติการวิจัย", floors: 3, roomsPerFloor: 3 },
-    ],
-  },
-];
 
 const DESCRIPTIONS: Record<CatKey, { text: string; landmark?: string }[]> = {
   electric: [
@@ -172,18 +145,17 @@ async function main() {
     catIds[c.key] = row.id;
   }
 
-  // Locations
+  // Locations (real CMU buildings and rooms, see db/locations.ts)
   const rooms: { id: number; buildingName: string; buildingId: number; floor: number; name: string }[] = [];
-  for (const campus of CAMPUSES) {
+  for (const campus of LOCATIONS) {
     const [c] = await sql`insert into campuses (name_th) values (${campus.name}) returning id`;
     for (const b of campus.buildings) {
       const [bRow] = await sql`insert into buildings (campus_id, name_th) values (${c.id}, ${b.name}) returning id`;
-      for (let f = 1; f <= b.floors; f++) {
-        for (let r = 1; r <= b.roomsPerFloor; r++) {
-          const name = `ห้อง ${f}${String(r).padStart(2, "0")}`;
-          const [room] = await sql`insert into rooms (building_id, floor, name_th) values (${bRow.id}, ${f}, ${name}) returning id`;
-          rooms.push({ id: room.id, buildingName: b.name, buildingId: bRow.id, floor: f, name });
-        }
+      for (const r of b.rooms) {
+        const name = roomName(r);
+        const floor = roomFloor(r);
+        const [room] = await sql`insert into rooms (building_id, floor, name_th) values (${bRow.id}, ${floor}, ${name}) returning id`;
+        rooms.push({ id: room.id, buildingName: b.name, buildingId: bRow.id, floor, name });
       }
     }
   }
@@ -265,8 +237,11 @@ async function main() {
   const now = Date.now();
   const total = plans.length;
   // Avoid seeding an open air-con request on CAMT room 301 so the demo's first submission is not a duplicate.
-  const camt301 = rooms.find((r) => r.buildingName === "อาคาร CAMT" && r.name === "ห้อง 301")!;
-  const weightedRooms = [...rooms, ...rooms.filter((r) => r.buildingName === "อาคาร CAMT"), ...rooms.filter((r) => r.buildingName === "อาคารเรียนรวม")];
+  const CAMT = "CAMT วิทยาลัยศิลปะ สื่อ และเทคโนโลยี";
+  const camt301 = rooms.find((r) => r.buildingName === CAMT && r.name === "CAMT301")!;
+  // Demo requests cluster in lecture buildings, CAMT and dormitories, like real traffic would.
+  const classrooms = rooms.filter((r) => /^(RB|HB|CAMT|SCB|ENG|BAB|ILC)/.test(r.buildingName));
+  const weightedRooms = [...classrooms, ...classrooms, ...rooms.filter((r) => r.buildingName === CAMT), ...rooms.filter((r) => /^หอพัก/.test(r.buildingName)).slice(0, 20), ...rooms];
 
   const counters = new Map<string, number>();
   const tsAfter = (t: number, minH: number, maxH: number) => Math.min(t + between(minH, maxH) * HOUR, now - 5 * 60_000);

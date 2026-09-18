@@ -22,7 +22,7 @@ Tip: use two browsers (or one normal + one private window) so the reporter and s
 ## Script
 
 1. **Browser A**: log in as `student01` → complete the profile and tick PDPA (saving is blocked until it is ticked).
-2. Tap **+ แจ้งซ่อม** → เครื่องปรับอากาศ → ปกติ → วิทยาเขตสวนสัก / อาคาร CAMT / ชั้น 3 / ห้อง 301 → description + 2 photos → review → **ส่งคำร้อง** → success animation and code (`MR-YYMM-NNNN`).
+2. Tap **+ แจ้งซ่อม** → เครื่องปรับอากาศ → ปกติ → วิทยาเขตสวนสัก / CAMT วิทยาลัยศิลปะ สื่อ และเทคโนโลยี / ชั้น 3 / CAMT301 → description + 2 photos → review → **ส่งคำร้อง** → success animation and code (`MR-YYMM-NNNN`).
 3. Tap **ติดตามสถานะ**: the timeline shows `รอรับเรื่อง`.
 4. **Browser B**: log in as `staff01` → แจ้งซ่อม → เครื่องปรับอากาศ → same room → the **มีคนแจ้งปัญหานี้แล้ว** sheet appears → **ติดตามงานนี้แทน**.
 5. Log out, log in as `admin01` → คำร้องทั้งหมด (pending badge) → click the new request → **รับเรื่อง** → **มอบหมายช่าง** → `ช่างสมศักดิ์ ใจดี` is at the top with the **เหมาะสมที่สุด** tag → confirm.

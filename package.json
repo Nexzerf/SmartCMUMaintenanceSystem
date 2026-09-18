@@ -12,7 +12,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
     "db:reset": "tsx scripts/migrate.ts --reset && tsx scripts/seed.ts",
-    "db:export-sql": "tsx scripts/export-setup-sql.ts"
+    "db:export-sql": "tsx scripts/export-setup-sql.ts",
+    "db:sync-locations": "tsx scripts/sync-locations.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-sans-thai": "^5.3.0",
