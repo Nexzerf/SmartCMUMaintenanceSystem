@@ -1,12 +1,11 @@
 "use client";
 
 import { animate, motion, useReducedMotion } from "framer-motion";
-import { AlertTriangle, CheckCircle2, ClipboardList, Clock, FileSpreadsheet, FileText, FlaskConical, Star } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardList, Clock, FileSpreadsheet, FileText, Star } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { simulateAutoClose } from "@/app/actions/admin";
 import { Button } from "@/components/ui/Button";
 import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -103,8 +102,6 @@ export function DashboardView({ data }: { data: View }) {
   const router = useRouter();
   const pathname = usePathname();
   const [loading, start] = useTransition();
-  const [simulating, startSim] = useTransition();
-  const [simMsg, setSimMsg] = useState<string | null>(null);
   const [from, setFrom] = useState(data.range.from);
   const [to, setTo] = useState(data.range.to);
   const [open, setOpen] = useState<string | null>(null);
@@ -300,30 +297,6 @@ export function DashboardView({ data }: { data: View }) {
           </Link>
         </Card>
 
-        <Card title="เครื่องมือสำหรับการสาธิต" subtitle="ใช้ระหว่างนำเสนอเท่านั้น">
-          <p className="text-sm text-muted">ทำให้คำร้องที่ “ซ่อมเสร็จ รอยืนยัน” เลยกำหนด 3 วัน เพื่อให้ระบบปิดงานอัตโนมัติ</p>
-          <Button
-            variant="soft"
-            block
-            className="mt-3"
-            loading={simulating}
-            onClick={() =>
-              startSim(async () => {
-                const res = await simulateAutoClose();
-                setSimMsg(res.ok ? (res.closed ? `ปิดงานอัตโนมัติแล้ว ${res.closed} รายการ` : "ไม่มีคำร้องที่รอยืนยัน") : res.error);
-                router.refresh();
-              })
-            }
-          >
-            <FlaskConical size={17} aria-hidden />
-            จำลองเวลาผ่านไป 3 วัน
-          </Button>
-          {simMsg ? (
-            <p role="status" className="mt-2 text-sm font-medium text-green-ink">
-              {simMsg}
-            </p>
-          ) : null}
-        </Card>
       </div>
 
       <RequestPanel code={open} onClose={() => setOpen(null)} />

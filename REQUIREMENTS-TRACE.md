@@ -60,7 +60,7 @@ Paths are relative to the project root. "Verified" notes how each item was check
 | Request table: filters, code search, sortable columns | `app/(admin)/admin/requests/page.tsx`, `components/admin/RequestTable.tsx` | Browser |
 | Side detail panel: accept, urgency, ask info, assign (skill match + open job count), merge, reject | `RequestPanel.tsx`, `app/actions/admin.ts`, `technicianOptions` | Browser (accept, assign), script (others) |
 | Pending badge in sidebar | `components/admin/AdminSidebar.tsx`, `pendingCount` | Browser (5 → 4) |
-| Auto-close after 3 days + demo button | `runAutoClose` in `transition.ts`, `simulateAutoClose` | `scripts/check-flow.ts` |
+| Auto-close after 3 days | `runAutoClose` in `transition.ts` (the admin "จำลองเวลาผ่านไป 3 วัน" demo button was removed at the owner's request) | `scripts/check-flow.ts` |
 | Master data CRUD: categories, campuses → buildings → rooms, technicians + skills | `app/(admin)/admin/settings/page.tsx`, `components/admin/SettingsView.tsx`, `app/actions/settings.ts` | Route smoke test |
 
 ### Authentication and roles

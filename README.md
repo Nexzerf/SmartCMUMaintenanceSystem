@@ -102,7 +102,7 @@ scripts/                    local DB, migrate, seed, checks
 ## Design notes
 
 - **Status machine**: every change goes through `transitionInTx()` in `lib/requests/transition.ts`, which checks the rule table (role, owner, assignee), writes `status_history`, and creates notifications for the reporter, followers, and technician. Invalid transitions throw and are shown as Thai error messages.
-- **Auto-close**: completed requests close after 3 days. This is checked on read (throttled to once per 30 s) on the home, history, tracking, technician, and admin pages. Admins have a "จำลองเวลาผ่านไป 3 วัน" demo button on the dashboard.
+- **Auto-close**: completed requests close after 3 days. This is checked on read (throttled to once per 30 s) on the home, history, tracking, technician, and admin pages.
 - **Realtime**: after each change the server sends a payload-free broadcast to `user-<id>` and `admins` topics. Clients re-fetch through authorized server code (`router.refresh()`), so no data travels over the public channel.
 - **Security**: all tables are reached only from the server. On Supabase, RLS is enabled with no policies, so the anon key cannot read tables.
 - **Font**: LINE Seed Sans TH is used when installed on the device. It is not on Google Fonts; to ship it, add its `.woff2` files to `public/fonts/` and add `url()` sources to the `@font-face` rules in `app/globals.css`. IBM Plex Sans Thai is the loaded fallback.

@@ -36,7 +36,6 @@ Tip: use two browsers (or one normal + one private window) so the reporter and s
 ### Extras if there is time
 
 - Admin panel: **ขอข้อมูลเพิ่ม** → reporter answers on the tracking page; **รวมคำร้องซ้ำ**; **ปฏิเสธ** with a reason.
-- Dashboard → **จำลองเวลาผ่านไป 3 วัน** closes every request still waiting for confirmation.
 - ข้อมูลพื้นฐาน: add a category or a room; it appears immediately in the reporter's form.
 - History: filters, search by code or building, **แจ้งซ่อมซ้ำ** on a closed request pre-fills category and room.
 - Leave the app idle for 30 minutes → automatic logout with an explanation on the login page.

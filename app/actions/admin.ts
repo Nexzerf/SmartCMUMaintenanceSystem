@@ -134,22 +134,3 @@ export async function mergeRequest(requestId: string, targetId: string): Promise
   }
 }
 
-/** Demo helper: pretend AUTO_CLOSE_DAYS have passed for every request waiting for confirmation. */
-export async function simulateAutoClose(): Promise<ActionResult<{ closed: number }>> {
-  try {
-    await requireActionUser("admin");
-    const shift = `${AUTO_CLOSE_DAYS} days`;
-    await sql`
-      update status_history set created_at = created_at - ${shift}::interval
-      where request_id in (select id from requests where status = 'completed')`;
-    await sql`
-      update requests set completed_at = completed_at - ${shift}::interval,
-        created_at = created_at - ${shift}::interval, updated_at = updated_at - ${shift}::interval
-      where status = 'completed'`;
-    const closed = await runAutoClose(true);
-    revalidatePath("/", "layout");
-    return { ok: true, closed };
-  } catch (err) {
-    return actionError(err);
-  }
-}
