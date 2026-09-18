@@ -1,4 +1,4 @@
-/** Dev helper: drive a request from the command line, e.g. `npx tsx --conditions=react-server scripts/demo-step.ts MR-2609-0013 assign tech01` */
+/** Dev helper: drive a request from the command line, e.g. `npx tsx --conditions=react-server scripts/demo-step.ts MR-2609-0013 assign tech01`. Steps: accept, assign <tech>, in_progress, completed */
 import "./env";
 import { sql } from "../lib/db";
 import { transitionStatus } from "../lib/requests/transition";
@@ -7,7 +7,9 @@ async function main() {
   const [code, step, who] = process.argv.slice(2);
   const [r] = await sql`select id from requests where code = ${code}`;
   const [admin] = await sql`select id from users where username = 'admin01'`;
-  if (step === "assign") {
+  if (step === "accept") {
+    await transitionStatus({ requestId: r.id, to: "accepted", actor: { id: admin.id, role: "admin" } });
+  } else if (step === "assign") {
     const [t] = await sql`select id from users where username = ${who}`;
     await transitionStatus({ requestId: r.id, to: "assigned", actor: { id: admin.id, role: "admin" }, assignTechnicianId: t.id });
   } else {
