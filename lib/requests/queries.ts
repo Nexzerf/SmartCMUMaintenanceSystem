@@ -1,6 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { sql } from "@/lib/db";
+import { runQueries, sql } from "@/lib/db";
 import { CATALOG_TAG } from "@/lib/cache-tags";
 import { ADMIN_LIST_LIMIT } from "@/lib/limits";
 import type { CurrentUser } from "@/lib/auth/guard";
@@ -151,19 +151,19 @@ export async function getRequestForUser(code: string, user: CurrentUser): Promis
     (user.role === "technician" && base.technician_id === user.id);
   if (!allowed) return null;
 
-  const [images, history, notes, info, [rating], [{ count }]] = await Promise.all([
-    sql<RequestDetail["images"]>`select id, url, kind from request_images where request_id = ${base.id} order by created_at`,
-    sql<RequestDetail["history"]>`
+  const [images, history, notes, info, [rating], [{ count }]] = await runQueries([
+    () => sql<RequestDetail["images"]>`select id, url, kind from request_images where request_id = ${base.id} order by created_at`,
+    () => sql<RequestDetail["history"]>`
       select h.id, h.from_status, h.to_status, h.note, u.full_name as actor_name, h.created_at
       from status_history h left join users u on u.id = h.actor_id
       where h.request_id = ${base.id} order by h.created_at, h.id`,
-    sql<RequestDetail["repair_notes"]>`
+    () => sql<RequestDetail["repair_notes"]>`
       select n.cause, n.parts_used, u.full_name as technician_name, n.created_at
       from repair_notes n left join users u on u.id = n.technician_id
       where n.request_id = ${base.id} order by n.created_at desc`,
-    sql<RequestDetail["info_requests"]>`select id, question, answer, answered_at, created_at from info_requests where request_id = ${base.id} order by created_at`,
-    sql<{ score: number; comment: string | null }[]>`select score, comment from ratings where request_id = ${base.id}`,
-    sql<{ count: number }[]>`select count(*)::int as count from request_followers where request_id = ${base.id}`,
+    () => sql<RequestDetail["info_requests"]>`select id, question, answer, answered_at, created_at from info_requests where request_id = ${base.id} order by created_at`,
+    () => sql<{ score: number; comment: string | null }[]>`select score, comment from ratings where request_id = ${base.id}`,
+    () => sql<{ count: number }[]>`select count(*)::int as count from request_followers where request_id = ${base.id}`,
   ]);
 
   const canViewPhone = user.role === "admin" || (user.role === "technician" && base.technician_id === user.id);
@@ -197,11 +197,11 @@ export type Catalog = {
 };
 
 async function loadCatalog(includeInactive: boolean): Promise<Catalog> {
-  const [categories, campuses, buildings, rooms] = await Promise.all([
-    sql<Catalog["categories"]>`select id, name_th, icon, is_active from categories ${includeInactive ? sql`` : sql`where is_active`} order by sort_order, id`,
-    sql<Catalog["campuses"]>`select id, name_th from campuses order by id`,
-    sql<Catalog["buildings"]>`select id, campus_id, name_th from buildings order by name_th`,
-    sql<Catalog["rooms"]>`select id, building_id, floor, name_th from rooms order by floor, name_th`,
+  const [categories, campuses, buildings, rooms] = await runQueries([
+    () => sql<Catalog["categories"]>`select id, name_th, icon, is_active from categories ${includeInactive ? sql`` : sql`where is_active`} order by sort_order, id`,
+    () => sql<Catalog["campuses"]>`select id, name_th from campuses order by id`,
+    () => sql<Catalog["buildings"]>`select id, campus_id, name_th from buildings order by name_th`,
+    () => sql<Catalog["rooms"]>`select id, building_id, floor, name_th from rooms order by floor, name_th`,
   ]);
   return { categories, campuses, buildings, rooms };
 }

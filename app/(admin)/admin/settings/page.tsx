@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SettingsView } from "@/components/admin/SettingsView";
 import { requirePageUser } from "@/lib/auth/guard";
-import { sql } from "@/lib/db";
+import { runQueries, sql } from "@/lib/db";
 import { getCatalog } from "@/lib/requests/queries";
 
 export const maxDuration = 30;
@@ -10,9 +10,9 @@ export const metadata: Metadata = { title: "ข้อมูลพื้นฐา
 
 export default async function SettingsPage() {
   await requirePageUser("admin");
-  const [catalog, technicians] = await Promise.all([
-    getCatalog(true),
-    sql<{ id: string; username: string; full_name: string; phone: string | null; is_active: boolean; skills: number[] }[]>`
+  const [catalog, technicians] = await runQueries([
+    () => getCatalog(true),
+    () => sql<{ id: string; username: string; full_name: string; phone: string | null; is_active: boolean; skills: number[] }[]>`
       select u.id, u.username, u.full_name, u.phone, u.is_active,
         coalesce(array_agg(ts.category_id order by ts.category_id) filter (where ts.category_id is not null), '{}') as skills
       from users u left join technician_skills ts on ts.technician_id = u.id
