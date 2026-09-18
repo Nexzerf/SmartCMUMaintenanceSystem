@@ -14,7 +14,11 @@ function create() {
     prepare: false,
     // Local PGlite is a single backend: keep one connection so extended-protocol messages never interleave.
     max: Number(process.env.DATABASE_POOL_MAX) || (process.env.NODE_ENV === "production" ? 5 : 10),
-    idle_timeout: 20,
+    // Serverless: instances freeze between requests, so recycle connections quickly
+    // rather than reusing a socket the pooler has already dropped.
+    idle_timeout: 10,
+    max_lifetime: 60 * 5,
+    connect_timeout: 15,
     onnotice: () => {},
     transform: { undefined: null },
   });

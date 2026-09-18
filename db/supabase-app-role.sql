@@ -18,6 +18,8 @@ begin
 end $$;
 
 alter role smartcmu_app set search_path to "SmartCMU", extensions;
+-- A runaway query is cancelled instead of holding a connection open.
+alter role smartcmu_app set statement_timeout = '20s';
 
 grant usage on schema "SmartCMU" to smartcmu_app;
 grant select, insert, update, delete on all tables in schema "SmartCMU" to smartcmu_app;

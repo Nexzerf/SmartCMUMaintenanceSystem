@@ -46,7 +46,9 @@ const LIST_COLUMNS = (viewerId: string | null) => sql`
   (select url from request_images i where i.request_id = r.id and i.kind = 'before' order by i.created_at limit 1) as thumb
 `;
 
-const LIST_JOINS = sql`
+// A function, not a shared value: one fragment object reused by queries that run at the same
+// time corrupts postgres.js parameter state and can leave a connection waiting forever.
+const LIST_JOINS = () => sql`
   from requests r
   join categories c on c.id = r.category_id
   join rooms rm on rm.id = r.room_id
@@ -59,7 +61,7 @@ const LIST_JOINS = sql`
 
 export async function listReporterRequests(userId: string) {
   return sql<RequestListItem[]>`
-    select ${LIST_COLUMNS(userId)} ${LIST_JOINS}
+    select ${LIST_COLUMNS(userId)} ${LIST_JOINS()}
     where r.reporter_id = ${userId}
        or exists(select 1 from request_followers f where f.request_id = r.id and f.user_id = ${userId})
     order by r.updated_at desc`;
@@ -67,7 +69,7 @@ export async function listReporterRequests(userId: string) {
 
 export async function listTechnicianJobs(techId: string) {
   return sql<RequestListItem[]>`
-    select ${LIST_COLUMNS(null)} ${LIST_JOINS}
+    select ${LIST_COLUMNS(null)} ${LIST_JOINS()}
     where r.assigned_technician_id = ${techId} and r.status in ('assigned', 'in_progress', 'waiting_parts', 'completed', 'closed')
     order by case r.urgency when 'urgent' then 0 when 'normal' then 1 else 2 end, r.created_at asc`;
 }
@@ -139,7 +141,7 @@ export async function getRequestForUser(code: string, user: CurrentUser): Promis
   const [base] = await sql<(RequestListItem & { reporter_phone: string | null; reporter_faculty: string | null; reject_reason: string | null; status_before_info: Status | null; reopen_count: number })[]>`
     select ${LIST_COLUMNS(user.id)}, rep.phone as reporter_phone, rep.faculty as reporter_faculty,
       r.reject_reason, r.status_before_info, r.reopen_count
-    ${LIST_JOINS}
+    ${LIST_JOINS()}
     where r.code = ${code}`;
   if (!base) return null;
 
@@ -180,7 +182,7 @@ export async function getRequestForUser(code: string, user: CurrentUser): Promis
 
 export async function findDuplicate(roomId: number, categoryId: number, excludeReporterId: string) {
   const [row] = await sql<RequestListItem[]>`
-    select ${LIST_COLUMNS(excludeReporterId)} ${LIST_JOINS}
+    select ${LIST_COLUMNS(excludeReporterId)} ${LIST_JOINS()}
     where r.room_id = ${roomId} and r.category_id = ${categoryId}
       and r.status not in ('closed', 'cancelled', 'rejected')
     order by r.created_at desc limit 1`;
