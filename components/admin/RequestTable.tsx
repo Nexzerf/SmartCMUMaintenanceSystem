@@ -171,13 +171,13 @@ export function RequestTable({ rows, catalog, filters, openCode }: { rows: Row[]
             </option>
           ))}
         </Select>
-        <label className="flex min-h-11 items-center gap-2 rounded-[12px] bg-white px-3 text-sm text-muted focus-within:ring-2 focus-within:ring-brand">
+        <label className="flex min-h-11 min-w-0 flex-col justify-center rounded-[12px] bg-white px-3.5 py-1 text-[11px] leading-tight text-muted focus-within:ring-2 focus-within:ring-brand">
           ตั้งแต่
-          <input type="date" value={filters.from ?? ""} max={filters.to} onChange={(e) => apply({ from: e.target.value || undefined })} className="min-w-0 flex-1 bg-transparent text-ink outline-none" />
+          <input type="date" value={filters.from ?? ""} max={filters.to} onChange={(e) => apply({ from: e.target.value || undefined })} className="w-full min-w-0 bg-transparent text-[14px] leading-tight text-ink outline-none" />
         </label>
-        <label className="flex min-h-11 items-center gap-2 rounded-[12px] bg-white px-3 text-sm text-muted focus-within:ring-2 focus-within:ring-brand">
+        <label className="flex min-h-11 min-w-0 flex-col justify-center rounded-[12px] bg-white px-3.5 py-1 text-[11px] leading-tight text-muted focus-within:ring-2 focus-within:ring-brand">
           ถึง
-          <input type="date" value={filters.to ?? ""} min={filters.from} onChange={(e) => apply({ to: e.target.value || undefined })} className="min-w-0 flex-1 bg-transparent text-ink outline-none" />
+          <input type="date" value={filters.to ?? ""} min={filters.from} onChange={(e) => apply({ to: e.target.value || undefined })} className="w-full min-w-0 bg-transparent text-[14px] leading-tight text-ink outline-none" />
         </label>
         {activeFilterCount || filters.q ? (
           <button
