@@ -1,4 +1,3 @@
-import { ChevronDown } from "lucide-react";
 import { forwardRef } from "react";
 import { cn } from "@/lib/cn";
 
@@ -32,10 +31,6 @@ export const Textarea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttrib
 });
 
 export const Select = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(function Select({ className, ...props }, ref) {
-  return (
-    <div className="relative">
-      <select ref={ref} className={cn(control, "min-h-11 appearance-none pr-9 text-[15px]", className)} {...props} />
-      <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted" aria-hidden />
-    </div>
-  );
+  // The chevron comes from the global select style in globals.css.
+  return <select ref={ref} className={cn(control, "min-h-11 text-[15px]", className)} {...props} />;
 });

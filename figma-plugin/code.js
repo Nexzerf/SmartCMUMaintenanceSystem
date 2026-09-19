@@ -576,7 +576,7 @@ function segmented(parent, options, active, o) {
   put(parent, s, { fillW: o.hug ? false : true });
   options.forEach(function (label, i) {
     const on = i === active;
-    const it = box({ name: "Segment/" + label, dir: "h", main: "CENTER", cross: "CENTER", p: [0, 12], r: 9, h: 40, fill: on ? "surface" : null, gap: 4 });
+    const it = box({ name: "Segment/" + label, dir: "h", main: "CENTER", cross: "CENTER", p: [0, o.hug ? 16 : 12], r: 9, h: 40, fill: on ? "surface" : null, gap: 4 });
     if (on) shadow(it, 1, 3, 0.08);
     const parts = String(label).split("|");
     text(it, parts[0], { size: 14, w: "sb", c: on ? "ink" : "muted" });
@@ -2183,7 +2183,7 @@ const TABLE_ROWS = [
 ];
 
 function filterChip(parent, label) {
-  const c = box({ name: "Filter/" + label, dir: "h", gap: 6, p: [0, 12], h: 40, r: 12, fill: "surface", cross: "CENTER", stroke: wf() ? "fillStrong" : null });
+  const c = box({ name: "Filter/" + label, dir: "h", gap: 10, p: [0, 14], h: 40, r: 12, fill: "surface", cross: "CENTER", stroke: wf() ? "fillStrong" : null });
   text(c, label, { size: 14 });
   icon(c, "chevron-down", 16, "muted");
   parent.appendChild(c);

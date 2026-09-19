@@ -34,7 +34,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(o.value)}
             className={cn(
               "relative min-h-10 rounded-[9px] text-sm font-semibold transition-colors",
-              dense ? "min-w-0 flex-1 basis-0 px-1 py-1 text-[13px] leading-tight sm:whitespace-nowrap sm:px-3 sm:text-sm" : "flex-1 whitespace-nowrap px-3",
+              dense ? "min-w-0 flex-1 basis-0 px-1 py-1 text-[13px] leading-tight sm:min-w-fit sm:basis-auto sm:whitespace-nowrap sm:px-4 sm:text-sm" : "flex-1 whitespace-nowrap px-3",
               active ? "text-ink" : "text-muted hover:text-ink",
             )}
           >
