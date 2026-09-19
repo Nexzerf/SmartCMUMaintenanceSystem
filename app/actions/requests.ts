@@ -65,7 +65,7 @@ export async function createRequest(input: z.input<typeof createSchema>): Promis
 }
 
 const positiveInt = z.number().int().positive();
-const uuid = z.string().uuid();
+const uuid = z.guid();
 
 export async function checkDuplicate(roomId: number, categoryId: number) {
   const user = await requireActionUser("reporter");
@@ -120,7 +120,7 @@ export async function cancelRequest(requestId: string): Promise<ActionResult> {
 }
 
 const answerSchema = z.object({
-  requestId: z.string().uuid(),
+  requestId: z.guid(),
   answer: z.string().trim().min(2, "กรุณาพิมพ์คำตอบ").max(1000),
 });
 
@@ -144,7 +144,7 @@ export async function answerInfoRequest(input: z.input<typeof answerSchema>): Pr
 }
 
 const confirmSchema = z.object({
-  requestId: z.string().uuid(),
+  requestId: z.guid(),
   score: z.number().int().min(1, "กรุณาให้คะแนน 1-5 ดาว").max(5),
   comment: z.string().trim().max(500).optional(),
 });
@@ -165,7 +165,7 @@ export async function confirmCompletion(input: z.input<typeof confirmSchema>): P
 }
 
 const reopenSchema = z.object({
-  requestId: z.string().uuid(),
+  requestId: z.guid(),
   reason: z.string().trim().min(5, "บอกอาการที่ยังพบสั้น ๆ อย่างน้อย 5 ตัวอักษร").max(500),
 });
 

@@ -10,7 +10,7 @@ import { notify, pingUsers, runAutoClose, TransitionError, transitionStatus } fr
 import { serialize } from "@/lib/serialize";
 import { AUTO_CLOSE_DAYS } from "@/lib/status";
 
-const id = z.string().uuid();
+const id = z.guid();
 const admin = (userId: string) => ({ id: userId, role: "admin" as const });
 
 function done() {

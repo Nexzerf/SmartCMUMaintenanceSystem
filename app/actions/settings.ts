@@ -119,7 +119,7 @@ export async function deleteLocation(kind: "campus" | "building" | "room", id: n
 // ----- Technicians -----
 
 const techSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.guid().optional(),
   username: z
     .string()
     .trim()

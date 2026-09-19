@@ -7,7 +7,7 @@ import { requireActionUser } from "@/lib/auth/guard";
 import { transitionStatus } from "@/lib/requests/transition";
 import { isOwnImageUrl } from "@/lib/storage";
 
-const id = z.string().uuid();
+const id = z.guid();
 
 export async function startJob(requestId: string): Promise<ActionResult> {
   try {
