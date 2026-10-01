@@ -16,6 +16,16 @@ for (const fmt of ["png", "svg"]) {
   execFileSync("java", ["-jar", JAR, "-charset", "UTF-8", `-t${fmt}`, "-o", OUT, ...sources.map((f) => path.join(DIR, f))], { stdio: "inherit" });
 }
 
+// diagrams/slide/*.puml are slide-only cuts of a report diagram (one view per actor, so the text
+// stays readable on a projector). They render to out/diagrams/slide/ beside the split tall images.
+const SLIDE_DIR = path.join(DIR, "slide");
+const SLIDE_OUT = path.join(OUT, "slide");
+const slideSources = fs.existsSync(SLIDE_DIR) ? fs.readdirSync(SLIDE_DIR).filter((f) => f.endsWith(".puml")).sort() : [];
+if (slideSources.length) {
+  fs.mkdirSync(SLIDE_OUT, { recursive: true });
+  execFileSync("java", ["-jar", JAR, "-charset", "UTF-8", "-tpng", "-o", SLIDE_OUT, ...slideSources.map((f) => path.join(SLIDE_DIR, f))], { stdio: "inherit" });
+}
+
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "&#10;");
 // draw.io's PlantUML server cannot see _style.iuml, so inline it.
 const inline = (src) => src.replace(/^!include\s+(\S+)\s*$/gm, (_, f) => fs.readFileSync(path.join(DIR, f), "utf8").trim());

@@ -1,0 +1,37 @@
+@startuml usecase-admin
+' มุมมองผู้ดูแลระบบและตัวตั้งเวลา แยกจากแผนภาพยูสเคสฉบับเต็ม (01-usecase.puml)
+!pragma layout smetana
+!include ../_style.iuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "ผู้ดูแลระบบ" as Admin
+actor "ตัวตั้งเวลาของระบบ" as Timer
+
+rectangle "มุมมองผู้ดูแลระบบ" {
+  usecase "UC01 เข้าสู่ระบบ" as UC01
+  usecase "UC13 ดูการแจ้งเตือน" as UC13
+  usecase "UC19 รับเรื่องคำร้อง" as UC19
+  usecase "UC20 ขอข้อมูลเพิ่มเติม" as UC20
+  usecase "UC21 มอบหมายช่าง" as UC21
+  usecase "UC22 รวมคำร้องซ้ำ" as UC22
+  usecase "UC23 ปฏิเสธคำร้อง" as UC23
+  usecase "UC24 ดูแดชบอร์ดสรุปผล" as UC24
+  usecase "UC25 ส่งออกรายงาน Excel/PDF" as UC25
+  usecase "UC26 จัดการข้อมูลพื้นฐาน" as UC26
+  usecase "UC27 ปิดงานอัตโนมัติ" as UC27
+}
+
+Admin --> UC01
+Admin --> UC13
+Admin --> UC19
+Admin --> UC20
+Admin --> UC21
+Admin --> UC22
+Admin --> UC23
+Admin --> UC24
+Admin --> UC26
+UC25 ..> UC24 : <<extend>>
+
+Timer --> UC27
+@enduml

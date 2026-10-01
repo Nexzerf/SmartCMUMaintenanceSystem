@@ -1,0 +1,44 @@
+@startuml usecase-reporter
+' มุมมองผู้แจ้ง แยกจากแผนภาพยูสเคสฉบับเต็ม (01-usecase.puml) ให้อ่านได้บนสไลด์
+!pragma layout smetana
+!include ../_style.iuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "นักศึกษา" as Student
+actor "บุคลากร" as Staff
+actor "ผู้แจ้ง" as Reporter
+
+Student --|> Reporter
+Staff --|> Reporter
+
+rectangle "FastFix CMU — มุมมองผู้แจ้ง" {
+  usecase "UC01 เข้าสู่ระบบ" as UC01
+  usecase "UC02 ตั้งค่าโปรไฟล์และยินยอม PDPA" as UC02
+  usecase "UC03 แจ้งซ่อม" as UC03
+  usecase "UC04 เลือกสถานที่" as UC04
+  usecase "UC05 แนบรูปภาพ" as UC05
+  usecase "UC06 ติดตามคำร้องที่ซ้ำแทน" as UC06
+  usecase "UC07 ติดตามสถานะคำร้อง" as UC07
+  usecase "UC08 ยกเลิกคำร้อง" as UC08
+  usecase "UC09 ตอบคำถามเพิ่มเติม" as UC09
+  usecase "UC10 ยืนยันผลและให้คะแนน" as UC10
+  usecase "UC11 แจ้งว่ายังไม่หาย" as UC11
+  usecase "UC12 ดูประวัติการแจ้งซ่อม" as UC12
+  usecase "UC13 ดูการแจ้งเตือน" as UC13
+}
+
+Reporter --> UC01
+Reporter --> UC02
+Reporter --> UC03
+Reporter --> UC07
+Reporter --> UC12
+Reporter --> UC13
+UC03 ..> UC04 : <<include>>
+UC03 ..> UC05 : <<include>>
+UC06 ..> UC03 : <<extend>>
+UC08 ..> UC07 : <<extend>>
+UC09 ..> UC07 : <<extend>>
+UC10 ..> UC07 : <<extend>>
+UC11 ..> UC07 : <<extend>>
+@enduml

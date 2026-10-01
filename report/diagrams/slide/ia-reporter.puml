@@ -1,0 +1,34 @@
+@startwbs ia-reporter
+' สถาปัตยกรรมสารสนเทศ เฉพาะส่วนผู้แจ้ง แยกจาก 07-ia.puml ให้อ่านได้บนสไลด์
+skinparam defaultFontName "Leelawadee UI"
+skinparam defaultFontSize 15
+skinparam dpi 150
+<style>
+wbsDiagram {
+  node {
+    BackgroundColor #F4EEF9
+    LineColor #5B2C83
+    RoundCorner 10
+  }
+  :depth(0) {
+    BackgroundColor #5B2C83
+    FontColor white
+  }
+</style>
+* ผู้แจ้ง
+** ตั้งค่าโปรไฟล์ + PDPA\n/profile/setup
+** หน้าแรก\n/home
+** แจ้งซ่อม\n/request/new
+*** 1. ปัญหา
+*** 2. สถานที่\nวิทยาเขต > คณะ > อาคาร > ชั้น > ห้อง
+*** 3. รายละเอียดและรูปภาพ
+*** 4. ตรวจสอบก่อนส่ง
+** ติดตามสถานะ\n/request/[code]
+*** ยกเลิกคำร้อง
+*** ตอบคำถามเพิ่มเติม
+*** ยืนยันและให้คะแนน
+*** แจ้งว่ายังไม่หาย
+** ประวัติ\n/history
+** แจ้งเตือน\n/notifications
+** โปรไฟล์\n/profile
+@endwbs

@@ -1,0 +1,31 @@
+@startwbs ia-admin
+' สถาปัตยกรรมสารสนเทศ เฉพาะส่วนผู้ดูแลระบบ แยกจาก 07-ia.puml
+skinparam defaultFontName "Leelawadee UI"
+skinparam defaultFontSize 15
+skinparam dpi 150
+<style>
+wbsDiagram {
+  node {
+    BackgroundColor #F4EEF9
+    LineColor #5B2C83
+    RoundCorner 10
+  }
+  :depth(0) {
+    BackgroundColor #5B2C83
+    FontColor white
+  }
+</style>
+* ผู้ดูแลระบบ
+** แดชบอร์ด\n/admin
+*** ตัวชี้วัดและกราฟ
+*** ส่งออก Excel / PDF
+** คำร้องทั้งหมด\n/admin/requests
+*** แผงจัดการคำร้อง
+**** รับเรื่อง / ขอข้อมูล
+**** มอบหมายช่าง
+**** รวมคำร้องซ้ำ / ปฏิเสธ
+** ข้อมูลพื้นฐาน\n/admin/settings
+*** ประเภทปัญหา
+*** สถานที่
+*** บัญชีช่าง
+@endwbs

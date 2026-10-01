@@ -1,0 +1,30 @@
+@startwbs ia-tech
+' สถาปัตยกรรมสารสนเทศ เฉพาะส่วนช่าง แยกจาก 07-ia.puml
+skinparam defaultFontName "Leelawadee UI"
+skinparam defaultFontSize 15
+skinparam dpi 150
+<style>
+wbsDiagram {
+  node {
+    BackgroundColor #F4EEF9
+    LineColor #5B2C83
+    RoundCorner 10
+  }
+  :depth(0) {
+    BackgroundColor #5B2C83
+    FontColor white
+  }
+</style>
+* ช่าง
+** งานของฉัน\n/tech
+*** งานใหม่
+*** กำลังทำ
+*** รออะไหล่
+*** เสร็จแล้ว
+** รายละเอียดงาน\n/tech/job/[code]
+*** รับงาน
+*** รออะไหล่
+*** บันทึกงานซ่อมเสร็จ
+** แจ้งเตือน\n/tech/notifications
+** โปรไฟล์\n/tech/profile
+@endwbs
