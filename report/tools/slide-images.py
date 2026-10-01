@@ -18,8 +18,6 @@ PLAN = {          # diagram: number of columns
     "activity-admin": 2,
     "activity-technician": 2,
     "activity-dashboard": 2,
-    "ia": 1,
-    "userflow": 1,
 }
 
 
